@@ -36,5 +36,6 @@ try {
       );
     });
 } catch (e) {
+  console.log(e);
   root.render(<EnvUnsupported/>);
 }
