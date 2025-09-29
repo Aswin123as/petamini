@@ -12,13 +12,13 @@ const PokemonCard: React.FC<Pokemon> = ({ name, image, types, height, weight }) 
           <img 
             src={image} 
             alt={name} 
-            className="pokemon-image inner-element" 
+            className="pokemon-image" 
             loading="lazy"
             draggable="false"
           />
         </div>
-        <div className="mt-5 d-flex flex-column align-items-center justify-content-center w-100">
-          <span className="pokemon-name py-2">{name}</span>
+        <div className="card-content">
+          <h2 className="pokemon-name">{name}</h2>
           <div className="type-badges">
             {types.map((type) => (
               <span key={type} className={`type-badge type-${type.toLowerCase()}`}>
@@ -29,15 +29,11 @@ const PokemonCard: React.FC<Pokemon> = ({ name, image, types, height, weight }) 
           <div className="d-flex align-items-center justify-content-between w-100 pt-3">
             <div className="d-flex flex-column align-items-center justify-content-center w-100">
               <span className="pokemon-stats">{height / 10} M</span>
-              <p className="d-flex align-items-center m-0">
-                Height
-              </p>
+              <p className="stats-label">Height</p>
             </div>
             <div className="d-flex flex-column align-items-center justify-content-center w-100">
               <span className="pokemon-stats">{weight / 10} Kg</span>
-              <p className="d-flex align-items-center m-0">
-                Weight
-              </p>
+              <p className="stats-label">Weight</p>
             </div>
           </div>
         </div>
@@ -45,5 +41,4 @@ const PokemonCard: React.FC<Pokemon> = ({ name, image, types, height, weight }) 
     </div>
   );
 };
-
 export default PokemonCard;

@@ -5,8 +5,7 @@
   background-image: url('/svgs/half-pokeball.svg'),
     radial-gradient(80% 80% at 50% bottom, rgb(51, 153, 255), rgba(6, 14, 32, 0.8));
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-  transition: transform 0.3s ease;
-  color: white;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;  color: white;
   position: relative;
   margin-top: 100px; /* Add space for the floating image */
 }
@@ -34,4 +33,10 @@
 .card-content {
   margin-top: 160px; /* Adjust based on image size */
   width: 100%;
+}
+.stats-label {
+  font-family: 'Comic Sans MS', 'Bubblegum Sans', cursive;
+  font-size: 14px;
+  color: #FFF;
+  margin-top: 5px;
 }
