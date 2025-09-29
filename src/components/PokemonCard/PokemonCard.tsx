@@ -5,10 +5,11 @@ import "./PokemonCard.css";
 import { Pokemon } from "../../sData/PokemonData";
 
 const PokemonCard: React.FC<Pokemon> = ({ name, image, types, height, weight }) => {
+    const primaryType = types[0]?.toLowerCase() || 'normal';
   return (
     <div className="mt-5 pt-5 col-lg-4 col-md-6 col-sm-12">
-      <div className="pokemon-card">
-        <div className="pokemon-image-container">
+      <div className={`pokemon-card type-${primaryType}-bg`}>
+            <div className="pokemon-image-container">
           <img 
             src={image} 
             alt={name} 
