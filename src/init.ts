@@ -26,12 +26,12 @@ export async function init(options: InitOptions): Promise<void> {
   setDebug(options.debug);
   initSDK();
 
-  // // 2. Add Eruda (for mobile/dev debugging)
-  // if (options.eruda) {
-  //   const { default: eruda } = await import('eruda');
-  //   eruda.init();
-  //   eruda.position({ x: window.innerWidth - 50, y: 0 });
-  // }
+  // 2. Add Eruda (for mobile/dev debugging)
+  if (options.eruda) {
+    const { default: eruda } = await import('eruda');
+    eruda.init();
+    eruda.position({ x: window.innerWidth - 50, y: 0 });
+  }
 
   // 3. Mock environment if needed
   //    We mock only when not in real Telegram, or when forced (e.g. macOS bugs)
