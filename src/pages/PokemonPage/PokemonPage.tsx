@@ -1,6 +1,6 @@
 // --- PokemonPage.tsx ---
 import React from "react";
-import "../../css/pokemonpage.css"; // Page-specific styles
+import  "../../css/PokemonPage.css"; // Page-specific styles
 import { pokemonData } from "../../sData/PokemonData"; // Sample data
 import PokemonCard from "./../../components/PokemonCard/PokemonCard"; // Card component
 import { Pokemon } from "../../types/pokemonty";
