@@ -8,9 +8,11 @@ import {
   bindViewportCssVars,
   mockTelegramEnv,
   type ThemeParams,
+  themeParamsState,
+  // retrieveLaunchParams,
   emitEvent,
   miniApp,
-  isTMA,
+  isTMA,                // detect if running in Telegram Mini App
 } from '@telegram-apps/sdk-react';
 
 interface InitOptions {
@@ -24,16 +26,17 @@ export async function init(options: InitOptions): Promise<void> {
   setDebug(options.debug);
   initSDK();
 
-  // 2. Add Eruda (for mobile/dev debugging)
-  if (options.eruda) {
-    const { default: eruda } = await import('eruda');
-    eruda.init();
-    eruda.position({ x: window.innerWidth - 50, y: 0 });
-  }
+  // // 2. Add Eruda (for mobile/dev debugging)
+  // if (options.eruda) {
+  //   const { default: eruda } = await import('eruda');
+  //   eruda.init();
+  //   eruda.position({ x: window.innerWidth - 50, y: 0 });
+  // }
 
-  // 3. Mock environment BEFORE any mounting
+  // 3. Mock environment if needed
+  //    We mock only when not in real Telegram, or when forced (e.g. macOS bugs)
   if (!isTMA() || options.mockForMacOS) {
-    const mockTheme: ThemeParams = {
+      const mockTheme: ThemeParams = {
       bg_color: '#ffffff',
       text_color: '#000000',
       hint_color: '#999999',
@@ -42,9 +45,10 @@ export async function init(options: InitOptions): Promise<void> {
       button_text_color: '#ffffff',
       secondary_bg_color: '#f0f0f0',
     };
-
     mockTelegramEnv({
-      launchParams: {
+      // You can provide launch param overrides if needed
+      // For example, mock theme params or start params
+     launchParams: {
         tgWebAppPlatform: options.mockForMacOS ? 'web' : 'unknown',
         tgWebAppThemeParams: mockTheme,
         tgWebAppVersion: '7.0',
@@ -52,42 +56,38 @@ export async function init(options: InitOptions): Promise<void> {
         tgWebAppShowSettings: false,
       },
       onEvent(event, next) {
-        // Handle theme request
+        // handle theme request
         if (event[0] === 'web_app_request_theme') {
-          return emitEvent('theme_changed', { theme_params: mockTheme });
+          const tp: ThemeParams = themeParamsState() || {};
+          return emitEvent('theme_changed', { theme_params: tp });
         }
 
-        // Handle safe area if needed
+        // handle safe area if needed
         if (event[0] === 'web_app_request_safe_area') {
           return emitEvent('safe_area_changed', {
-            left: 0,
-            top: 0,
-            right: 0,
-            bottom: 0,
+            left: 0, top: 0, right: 0, bottom: 0,
           });
         }
 
-        // Pass through other events
+        // pass through other events
         next();
       },
     });
   }
 
-  // 4. Restore init data FIRST
+  // 4. Mount / restore essential UI and state
+  mountBackButton.ifAvailable();
   restoreInitData();
 
-  // 5. Mount back button
-  mountBackButton.ifAvailable();
-
-  // 6. Mount miniApp / theme styling
-  if (miniApp.mount.isAvailable()) {
-    miniApp.mount();
+  // 5. Mount miniApp / theme styling
+  if (miniApp.mountSync.isAvailable()) {
+    miniApp.mountSync();
     bindThemeParamsCssVars();
   }
 
-  // 7. Viewport (synchronous mount)
+  // 6. Viewport and CSS Vars binding
   if (mountViewport.isAvailable()) {
-    mountViewport();
+    await mountViewport();
     bindViewportCssVars();
   }
 }

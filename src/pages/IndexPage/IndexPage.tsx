@@ -37,7 +37,7 @@ export const IndexPage: FC = () => {
             <Cell subtitle="Telegram application palette information">Theme Parameters</Cell>
           </Link>
           <Link to="/pokemon">
-            <Cell subtitle="Telegram application palette information">Theme Parameters</Cell>
+            <Cell subtitle="Find Your Pokemon">Theme Parameters</Cell>
           </Link>
         </Section>
       </List>
