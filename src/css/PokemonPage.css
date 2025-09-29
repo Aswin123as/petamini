@@ -1,0 +1,40 @@
+/* --- PokemonPage.css --- */
+.pokemon-page {
+min-height: 100vh;
+background: #000;
+display: flex;
+flex-direction: column;
+align-items: center;
+padding: 1rem;
+}
+
+
+.title {
+font-size: 1.75rem;
+font-weight: bold;
+color: #fff;
+margin-bottom: 1.5rem;
+}
+
+
+.card-grid {
+display: grid;
+grid-template-columns: 1fr;
+gap: 1rem;
+width: 100%;
+max-width: 1200px;
+}
+
+
+@media (min-width: 640px) {
+.card-grid {
+grid-template-columns: repeat(2, 1fr);
+}
+}
+
+
+@media (min-width: 768px) {
+.card-grid {
+grid-template-columns: repeat(3, 1fr);
+}
+}

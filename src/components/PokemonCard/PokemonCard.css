@@ -1,0 +1,37 @@
+.pokemon-card {
+  width: 300px;
+  border-radius: 20px;
+  padding: 20px;
+  background-image: url('/svgs/half-pokeball.svg'),
+    radial-gradient(80% 80% at 50% bottom, rgb(51, 153, 255), rgba(6, 14, 32, 0.8));
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  transition: transform 0.3s ease;
+  color: white;
+  position: relative;
+  margin-top: 100px; /* Add space for the floating image */
+}
+
+.pokemon-image-container {
+  position: absolute;
+  top: -100px; /* Pull the image container up */
+  left: 50%;
+  transform: translateX(-50%);
+  width: 280px;
+  height: 280px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.pokemon-image {
+  width: 100%;
+  height: auto;
+  transition: transform 0.3s ease;
+  filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.2));
+}
+
+/* Update the content spacing to accommodate the floating image */
+.card-content {
+  margin-top: 160px; /* Adjust based on image size */
+  width: 100%;
+}
