@@ -21,8 +21,8 @@ const PokemonPage: React.FC = () => {
 
 
 {/* Cards Grid - Fixed 4x4 */}
-<div className="max-w-7xl mx-auto mb-10 p-6 bg-white/10 backdrop-blur-lg rounded-3xl shadow-2xl border border-white/20">
-  <div className="row g-2">
+<div className="">
+  <div className="grid grid-cols-4 gap-2">
     {pokemonData.slice(0, 16).map((poke: Pokemon) => (
       <PokemonCard key={poke.name} {...poke} />
     ))}

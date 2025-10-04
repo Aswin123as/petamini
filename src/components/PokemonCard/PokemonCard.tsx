@@ -6,7 +6,7 @@ const PokemonCard: React.FC<Pokemon> = ({ name, image, types, height, weight }) 
   const primaryType = types[0]?.toLowerCase() || 'normal';
   
   return (
-    <div className="col-3 p-1">
+    <div className=" p-1">
       <div className={`pokemon-card type-${primaryType}-bg`}>
         <div className="pokemon-image-container">
           <img 
