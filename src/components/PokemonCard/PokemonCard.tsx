@@ -23,7 +23,6 @@ const typeColors: Record<string, string> = {
 };
 
 const MAX_TILT = 8; // degrees
-const TRANSITION_SPEED = 200; // ms
 
 const PokemonCard: React.FC<Pokemon> = ({
   name,
