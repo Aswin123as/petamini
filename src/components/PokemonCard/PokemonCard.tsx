@@ -1,20 +1,25 @@
-import React,{useState} from "react";
-import "./PokemonCard.css";
-import { Pokemon } from "../../sData/PokemonData";
+import React from 'react';
+import './PokemonCard.css';
+import { Pokemon } from '../../sData/PokemonData';
 
-const PokemonCard: React.FC<Pokemon> = ({ name, image, types, height, weight }) => {
+const PokemonCard: React.FC<Pokemon> = ({
+  name,
+  image,
+  types,
+  height,
+  weight,
+}) => {
   const primaryType = types[0]?.toLowerCase() || 'normal';
-  const [currentPage, setCurrentPage] = useState(0);
-  
+
   return (
     <div className=" p-1">
       <div className={`pokemon-card type-${primaryType}-bg`}>
         {/* image area */}
         <div className="pokemon-image-container">
-          <img 
-            src={image} 
-            alt={name} 
-            className="pokemon-image" 
+          <img
+            src={image}
+            alt={name}
+            className="pokemon-image"
             loading="lazy"
             draggable="false"
           />
@@ -25,7 +30,10 @@ const PokemonCard: React.FC<Pokemon> = ({ name, image, types, height, weight }) 
           <h2 className="pokemon-name">{name}</h2>
           <div className="type-badges">
             {types.map((type) => (
-              <span key={type} className={`type-badge type-${type.toLowerCase()}`}>
+              <span
+                key={type}
+                className={`type-badge type-${type.toLowerCase()}`}
+              >
                 {type}
               </span>
             ))}
