@@ -2,6 +2,7 @@ import React from "react";
 import { pokemonData } from "../../sData/PokemonData"; // Sample data
 import PokemonCard from "./../../components/PokemonCard/PokemonCard"; // Card component
 import { Pokemon } from "../../types/pokemonty";
+import SwipeableGrid from "@/components/swipeItems/swipeItems";
 
 
 const PokemonPage: React.FC = () => {
@@ -21,14 +22,25 @@ const PokemonPage: React.FC = () => {
 
 
 {/* Cards Grid - Fixed 4x4 */}
-<div className="">
+{/* <div className="">
   <div className="grid grid-cols-3 gap-2">
     {pokemonData.slice(0, 16).map((poke: Pokemon) => (
       <PokemonCard key={poke.name} {...poke} />
     ))}
   </div>
+</div> */}
+
+
+<SwipeableGrid
+  items={pokemonData}
+  renderItem={(poke) => <PokemonCard {...poke} />}
+  keyExtractor={(poke) => poke.name}
+  itemsPerPage={3}
+  columns={3}
+  gap={1}
+/>
+
 </div>
-    </div>
   );
 };
 export default PokemonPage;

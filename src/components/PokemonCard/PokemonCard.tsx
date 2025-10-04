@@ -1,13 +1,15 @@
-import React from "react";
+import React,{useState} from "react";
 import "./PokemonCard.css";
 import { Pokemon } from "../../sData/PokemonData";
 
 const PokemonCard: React.FC<Pokemon> = ({ name, image, types, height, weight }) => {
   const primaryType = types[0]?.toLowerCase() || 'normal';
+  const [currentPage, setCurrentPage] = useState(0);
   
   return (
     <div className=" p-1">
       <div className={`pokemon-card type-${primaryType}-bg`}>
+        {/* image area */}
         <div className="pokemon-image-container">
           <img 
             src={image} 
@@ -17,6 +19,8 @@ const PokemonCard: React.FC<Pokemon> = ({ name, image, types, height, weight }) 
             draggable="false"
           />
         </div>
+
+        {/* name area */}
         <div className="card-content">
           <h2 className="pokemon-name">{name}</h2>
           <div className="type-badges">
@@ -26,6 +30,8 @@ const PokemonCard: React.FC<Pokemon> = ({ name, image, types, height, weight }) 
               </span>
             ))}
           </div>
+
+          {/* stats Area */}
           <div className="pokemon-stats-container">
             <div className="stat-item">
               <span className="pokemon-stats">{height / 10}M</span>
