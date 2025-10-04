@@ -23,7 +23,7 @@ const typeColors: Record<string, string> = {
 };
 
 const MAX_TILT = 6; // degrees
-const SCALE_HOVER = 1.02;
+const SCALE_HOVER = 1.03;
 
 const PokemonCard: React.FC<Pokemon> = ({
   name,
@@ -43,7 +43,6 @@ const PokemonCard: React.FC<Pokemon> = ({
     card.style.zIndex = '0';
   };
 
-  // Mouse tilt
   const handleMouseMove = (e: React.MouseEvent) => {
     const card = cardRef.current;
     if (!card) return;
@@ -58,13 +57,12 @@ const PokemonCard: React.FC<Pokemon> = ({
     card.style.zIndex = '10';
   };
 
-  // Touch tilt
   useEffect(() => {
     const card = cardRef.current;
     if (!card) return;
     let rect: DOMRect;
 
-    const handleTouchStart = (e: TouchEvent) => {
+    const handleTouchStart = () => {
       rect = card.getBoundingClientRect();
     };
 
@@ -98,27 +96,18 @@ const PokemonCard: React.FC<Pokemon> = ({
   return (
     <div
       ref={cardRef}
-      className={`
-        relative p-[1px]
-        rounded-2xl overflow-visible
-        bg-white/5 backdrop-blur-xl
-        border border-white/20
-        shadow-[0_8px_24px_rgba(0,0,0,0.1)]
-        hover:shadow-[0_12px_32px_rgba(0,0,0,0.2)]
-        transition-all duration-300 ease-out
-        cursor-pointer
-      `}
+      className="group relative p-[1px] rounded-2xl overflow-visible shadow-lg border border-white/20 cursor-pointer transition-all duration-300 ease-out"
       style={{
-        background: `linear-gradient(145deg, ${primaryColor}30, rgba(255,255,255,0.05) 70%)`,
-        transformStyle: 'preserve-3d',
         perspective: '1000px',
+        transformStyle: 'preserve-3d',
+        background: `linear-gradient(145deg, ${primaryColor}30, rgba(255,255,255,0.05) 70%)`,
       }}
       onMouseMove={handleMouseMove}
       onMouseLeave={resetTransform}
     >
       {/* Glow */}
       <div
-        className="absolute inset-0 blur-3xl opacity-40 group-hover:opacity-70 transition-opacity duration-700"
+        className="absolute inset-0 blur-3xl opacity-40 group-hover:opacity-70 transition-opacity duration-700 rounded-2xl"
         style={{
           background: `radial-gradient(circle at 50% 20%, ${primaryColor}40, transparent 60%)`,
         }}
@@ -131,12 +120,7 @@ const PokemonCard: React.FC<Pokemon> = ({
           alt={name}
           loading="lazy"
           draggable="false"
-          className="
-            w-28 h-28 object-contain
-            transition-transform duration-500
-            group-hover:scale-105 group-hover:-translate-y-1
-            drop-shadow-[0_4px_10px_rgba(0,0,0,0.15)]
-          "
+          className="w-28 h-28 object-contain transition-transform duration-500 group-hover:scale-105 group-hover:-translate-y-1 drop-shadow-[0_4px_10px_rgba(0,0,0,0.15)]"
         />
       </div>
 
@@ -146,13 +130,13 @@ const PokemonCard: React.FC<Pokemon> = ({
           {name}
         </h2>
 
-        <div className="flex justify-center gap-2 mt-3">
+        <div className="flex justify-center gap-2 mt-3 flex-wrap">
           {types.map((type) => {
             const color = typeColors[type.toLowerCase()] || '#A8A878';
             return (
               <span
                 key={type}
-                className="text-xs font-medium px-2 py-1 rounded-full capitalize text-white/90 shadow-[0_2px_6px_rgba(0,0,0,0.15)] backdrop-blur-sm transition-all duration-300"
+                className="text-xs font-medium px-2 py-1 rounded-full capitalize text-white/90 shadow-md backdrop-blur-sm transition-all duration-300"
                 style={{
                   background: `linear-gradient(135deg, ${color}90, ${color}60)`,
                   boxShadow: `0 0 10px ${color}40`,
@@ -181,7 +165,7 @@ const PokemonCard: React.FC<Pokemon> = ({
       </div>
 
       {/* Soft overlay */}
-      <div className="absolute inset-0 bg-gradient-to-t from-transparent via-white/5 to-transparent opacity-20 group-hover:opacity-40 transition-opacity duration-700 pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-t from-transparent via-white/5 to-transparent opacity-20 group-hover:opacity-40 transition-opacity duration-700 pointer-events-none rounded-2xl" />
     </div>
   );
 };
