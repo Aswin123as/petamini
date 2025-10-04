@@ -1,4 +1,4 @@
-import { useState, useMemo, ReactNode, KeyboardEvent } from 'react';
+import { useState, useEffect, useMemo, ReactNode, KeyboardEvent } from 'react';
 
 interface SwipeableGridProps<T> {
   items: T[];
@@ -9,7 +9,7 @@ interface SwipeableGridProps<T> {
   gap?: number;
   showIndicators?: boolean;
   showArrows?: boolean;
-  loop?: boolean; // new option for circular navigation
+  loop?: boolean;
 }
 
 function SwipeableGrid<T>({
@@ -27,11 +27,17 @@ function SwipeableGrid<T>({
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const [touchStartY, setTouchStartY] = useState<number | null>(null);
+  const [showArrowHint, setShowArrowHint] = useState(true);
 
   const totalPages = Math.ceil(items.length / itemsPerPage);
   const minSwipeDistance = 50;
 
-  // Tailwind safe class mappings
+  // Hide arrow hint after 2 seconds
+  useEffect(() => {
+    const timer = setTimeout(() => setShowArrowHint(false), 2000);
+    return () => clearTimeout(timer);
+  }, []);
+
   const colClass =
     {
       1: 'grid-cols-1',
@@ -52,65 +58,44 @@ function SwipeableGrid<T>({
       8: 'gap-8',
     }[gap] || 'gap-2';
 
-  // Optimize slice
   const currentItems = useMemo(
     () =>
       items.slice(currentPage * itemsPerPage, (currentPage + 1) * itemsPerPage),
     [items, currentPage, itemsPerPage]
   );
 
-  // Navigation helpers
   const goToPage = (page: number) => {
-    if (loop) {
-      setCurrentPage((page + totalPages) % totalPages);
-    } else {
-      setCurrentPage(Math.max(0, Math.min(page, totalPages - 1)));
-    }
+    if (loop) setCurrentPage((page + totalPages) % totalPages);
+    else setCurrentPage(Math.max(0, Math.min(page, totalPages - 1)));
   };
-
   const nextPage = () => goToPage(currentPage + 1);
   const prevPage = () => goToPage(currentPage - 1);
 
-  // Touch handlers
   const onTouchStart = (e: React.TouchEvent) => {
     setTouchEnd(null);
     setTouchStart(e.targetTouches[0].clientX);
     setTouchStartY(e.targetTouches[0].clientY);
   };
-
-  const onTouchMove = (e: React.TouchEvent) => {
+  const onTouchMove = (e: React.TouchEvent) =>
     setTouchEnd(e.targetTouches[0].clientX);
-  };
-
   const onTouchEnd = () => {
     if (touchStart === null || touchEnd === null || touchStartY === null)
       return;
-
     const deltaX = touchStart - touchEnd;
     const deltaY = Math.abs(touchStartY - (touchEnd || 0));
-
-    // Prevent accidental vertical scroll triggers
     if (Math.abs(deltaX) < Math.abs(deltaY)) return;
-
-    const isLeftSwipe = deltaX > minSwipeDistance;
-    const isRightSwipe = deltaX < -minSwipeDistance;
-
-    if (isLeftSwipe) nextPage();
-    if (isRightSwipe) prevPage();
+    if (deltaX > minSwipeDistance) nextPage();
+    if (deltaX < -minSwipeDistance) prevPage();
   };
 
-  // Keyboard navigation
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.key === 'ArrowRight') nextPage();
     if (e.key === 'ArrowLeft') prevPage();
   };
 
   return (
-    <div
-      className="relative outline-none"
-      tabIndex={0} // make focusable for keyboard
-      onKeyDown={onKeyDown}
-    >
+    <div className="relative outline-none" tabIndex={0} onKeyDown={onKeyDown}>
+      {/* Grid container */}
       <div
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
@@ -123,6 +108,40 @@ function SwipeableGrid<T>({
           ))}
         </div>
       </div>
+
+      {/* Temporary arrow hint for mobile */}
+      {showArrowHint && (
+        <div className="absolute inset-0 flex justify-between items-center px-2 pointer-events-none md:hidden">
+          <div className="text-white/50 text-lg select-none">← Swipe</div>
+          <div className="text-white/50 text-lg select-none">Swipe →</div>
+        </div>
+      )}
+
+      {/* Arrow Navigation (desktop only) */}
+      {showArrows && totalPages > 1 && (
+        <>
+          {(loop || currentPage > 0) && (
+            <button
+              onClick={prevPage}
+              aria-label="Previous page"
+              className="hidden md:flex absolute left-2 top-1/2 -translate-y-1/2 
+                p-3 rounded-full text-white text-2xl z-10"
+            >
+              ←
+            </button>
+          )}
+          {(loop || currentPage < totalPages - 1) && (
+            <button
+              onClick={nextPage}
+              aria-label="Next page"
+              className="hidden md:flex absolute right-2 top-1/2 -translate-y-1/2 
+                p-3 rounded-full text-white text-2xl z-10"
+            >
+              →
+            </button>
+          )}
+        </>
+      )}
 
       {/* Page Indicators */}
       {showIndicators && totalPages > 1 && (
@@ -138,30 +157,6 @@ function SwipeableGrid<T>({
             />
           ))}
         </div>
-      )}
-
-      {/* Arrow Navigation */}
-      {showArrows && totalPages > 1 && (
-        <>
-          {(loop || currentPage > 0) && (
-            <button
-              onClick={prevPage}
-              aria-label="Previous page"
-              className="absolute left-0 top-1/2 -translate-y-1/2 bg-white/80 p-2 rounded-r shadow-md z-10"
-            >
-              ←
-            </button>
-          )}
-          {(loop || currentPage < totalPages - 1) && (
-            <button
-              onClick={nextPage}
-              aria-label="Next page"
-              className="absolute right-0 top-1/2 -translate-y-1/2 bg-white/80 p-2 rounded-l shadow-md z-10"
-            >
-              →
-            </button>
-          )}
-        </>
       )}
     </div>
   );
