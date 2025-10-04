@@ -32,7 +32,6 @@ export async function init(options: InitOptions): Promise<void> {
     eruda.init();
     eruda.position({ x: window.innerWidth - 50, y: 0 });
   }
-
   // 3. Mock environment if needed
   //    We mock only when not in real Telegram, or when forced (e.g. macOS bugs)
   if (!isTMA() || options.mockForMacOS) {
