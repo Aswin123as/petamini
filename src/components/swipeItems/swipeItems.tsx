@@ -187,7 +187,7 @@ function SwipeableGrid<T>({
     >
       <div
         ref={containerRef}
-        className="overflow-hidden rounded-2xl bg-white/5 backdrop-blur-xl p-4 select-none shadow-lg border border-white/10"
+        className="overflow-hidden rounded-2xl bg-white/5 backdrop-blur-xl select-none shadow-lg border border-white/10"
       >
         <div
           className={`flex transition-transform duration-[${ANIMATION_DURATION}ms] ease-out`}
@@ -198,18 +198,17 @@ function SwipeableGrid<T>({
           }}
         >
           {pageItems.map((page, idx) => (
-            <div
-              key={idx}
-              className={`flex-shrink-0 w-full grid ${getGridCols()} ${gapClass}`}
-            >
-              {page.map((item) => (
-                <div
-                  key={keyExtractor(item)}
-                  className="transition-transform hover:scale-[1.03] active:scale-[0.97] cursor-pointer"
-                >
-                  {renderItem(item)}
-                </div>
-              ))}
+            <div key={idx} className="flex-shrink-0 w-full px-4 py-4">
+              <div className={`grid ${getGridCols()} ${gapClass}`}>
+                {page.map((item) => (
+                  <div
+                    key={keyExtractor(item)}
+                    className="transition-transform hover:scale-[1.03] active:scale-[0.97] cursor-pointer"
+                  >
+                    {renderItem(item)}
+                  </div>
+                ))}
+              </div>
             </div>
           ))}
         </div>
@@ -217,11 +216,11 @@ function SwipeableGrid<T>({
 
       {/* Mobile swipe hints */}
       {showArrowHint && totalPages > 1 && (
-        <div className="absolute inset-0 flex justify-between items-center px-4 pointer-events-none md:hidden">
-          <span className="animate-pulse text-white/50 text-sm select-none">
+        <div className="absolute inset-0 flex justify-between items-center px-8 pointer-events-none md:hidden">
+          <span className="animate-pulse text-white/70 text-2xl select-none drop-shadow-lg">
             ←
           </span>
-          <span className="animate-pulse text-white/50 text-sm select-none">
+          <span className="animate-pulse text-white/70 text-2xl select-none drop-shadow-lg">
             →
           </span>
         </div>

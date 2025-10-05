@@ -9,7 +9,7 @@ const PokemonPage: React.FC = () => {
       <h1 className="text-4xl font-bold text-center mb-8 p-10">
         Pokémon Gallery
       </h1>
-      <div className="max-w-3xl mx-auto mb-10 p-6 bg-white/10 backdrop-blur-lg rounded-3xl shadow-2xl border border-white/20">
+      {/* <div className="max-w-3xl mx-auto mb-10 p-6 bg-white/10 backdrop-blur-lg rounded-3xl shadow-2xl border border-white/20">
         <div className="text-center">
           <h2 className="text-2xl font-semibold mb-4">
             Welcome to the Pokémon Gallery!
@@ -22,7 +22,7 @@ const PokemonPage: React.FC = () => {
             Note: This is a demo page showcasing Pokémon cards.
           </p>
         </div>
-      </div>
+      </div> */}
       <SwipeableGrid
         items={pokemonData}
         renderItem={(poke) => <PokemonCard {...poke} />}
