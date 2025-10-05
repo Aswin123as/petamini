@@ -42,7 +42,6 @@ function SwipeableGrid<T>({
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState(0);
   const [showArrowHint, setShowArrowHint] = useState(true);
-  console.log('Rendering SwipeableGrid with items:', isDragging);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const touchState = useRef({ startX: 0, startTime: 0, isDragging: false });
