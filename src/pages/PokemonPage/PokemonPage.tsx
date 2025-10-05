@@ -5,33 +5,29 @@ import SwipeableGrid from '@/components/swipeItems/swipeItems';
 
 const PokemonPage: React.FC = () => {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-500 to-purple-600 text-white p-10">
-      <h1 className="text-4xl font-bold text-center mb-8 p-10">
-        Pokémon Gallery
-      </h1>
-      {/* <div className="max-w-3xl mx-auto mb-10 p-6 bg-white/10 backdrop-blur-lg rounded-3xl shadow-2xl border border-white/20">
-        <div className="text-center">
-          <h2 className="text-2xl font-semibold mb-4">
-            Welcome to the Pokémon Gallery!
-          </h2>
-          <p className="mb-4">
-            Explore a collection of your favorite Pokémon. Click on any card to
-            see more details about each Pokémon.
-          </p>
-          <p className="italic text-sm">
-            Note: This is a demo page showcasing Pokémon cards.
-          </p>
-        </div>
-      </div> */}
-      <SwipeableGrid
-        items={pokemonData}
-        renderItem={(poke) => <PokemonCard {...poke} />}
-        keyExtractor={(poke) => poke.name}
-        itemsPerPage={3}
-        columns={3}
-        gap={1}
-      />
+    <div className="min-h-screen bg-gradient-to-b from-blue-500 to-purple-600 text-white">
+      {/* Header Section */}
+      <header className="text-center py-10 px-4">
+        <h1 className="text-4xl font-bold mb-4">Pokémon Gallery</h1>
+        {/* Optional subtitle */}
+        {/* <p className="text-white/80">Swipe through the Pokémon collection below!</p> */}
+      </header>
+
+      {/* Full-Width Swipeable Grid */}
+      <div className="relative">
+        <section className="px-4 sm:px-6 md:px-10 pb-10">
+          <SwipeableGrid
+            items={pokemonData}
+            renderItem={(poke) => <PokemonCard {...poke} />}
+            keyExtractor={(poke) => poke.name}
+            itemsPerPage={1}
+            columns={1}
+            gap={1}
+          />
+        </section>
+      </div>
     </div>
   );
 };
+
 export default PokemonPage;
