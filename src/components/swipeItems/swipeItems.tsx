@@ -47,7 +47,7 @@ function SwipeableGrid<T>({
   const touchState = useRef({ startX: 0, startTime: 0, isDragging: false });
 
   const totalPages = Math.max(1, Math.ceil(items.length / itemsPerPage));
-
+  console.log(isDragging);
   // Show mobile swipe hint for 2.5s
   useEffect(() => {
     const timer = setTimeout(
