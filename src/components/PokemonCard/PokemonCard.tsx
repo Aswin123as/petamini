@@ -22,7 +22,7 @@ const typeColors: Record<string, string> = {
   flying: '#A890F0',
 };
 
-const MAX_TILT = 6; // degrees
+const MAX_TILT = 6;
 const SCALE_HOVER = 1.03;
 
 const PokemonCard: React.FC<Pokemon> = ({
@@ -96,47 +96,50 @@ const PokemonCard: React.FC<Pokemon> = ({
   return (
     <div
       ref={cardRef}
-      className="group relative p-[1px] rounded-2xl overflow-visible shadow-lg border border-white/20 cursor-pointer transition-all duration-300 ease-out"
+      className="group relative w-full max-w-[250px] aspect-[4/5] rounded-2xl overflow-hidden shadow-lg border border-white/20 cursor-pointer transition-all duration-300 ease-out"
       style={{
         perspective: '1000px',
         transformStyle: 'preserve-3d',
         background: `linear-gradient(145deg, ${primaryColor}30, rgba(255,255,255,0.05) 70%)`,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
       }}
       onMouseMove={handleMouseMove}
       onMouseLeave={resetTransform}
     >
       {/* Glow */}
       <div
-        className="absolute inset-0 blur-3xl opacity-40 group-hover:opacity-70 transition-opacity duration-700 rounded-2xl"
+        className="absolute inset-0 blur-3xl opacity-40 group-hover:opacity-70 transition-opacity duration-700"
         style={{
           background: `radial-gradient(circle at 50% 20%, ${primaryColor}40, transparent 60%)`,
         }}
       />
 
       {/* Image */}
-      <div className="relative flex justify-center mt-4 z-10">
+      <div className="relative flex justify-center mt-2 z-10 flex-shrink-0">
         <img
           src={image}
           alt={name}
           loading="lazy"
           draggable="false"
-          className="w-28 h-28 object-contain transition-transform duration-500 group-hover:scale-105 group-hover:-translate-y-1 drop-shadow-[0_4px_10px_rgba(0,0,0,0.15)]"
+          className="w-24 h-24 md:w-28 md:h-28 object-contain transition-transform duration-500 group-hover:scale-105 group-hover:-translate-y-1 drop-shadow-[0_4px_10px_rgba(0,0,0,0.15)]"
         />
       </div>
 
       {/* Info */}
-      <div className="p-4 text-center relative z-10">
-        <h2 className="text-lg font-semibold capitalize tracking-wide text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.4)]">
+      <div className="p-3 text-center relative z-10 overflow-hidden flex-shrink-0">
+        <h2 className="text-lg md:text-xl font-semibold capitalize truncate text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.4)]">
           {name}
         </h2>
 
-        <div className="flex justify-center gap-2 mt-3 flex-wrap">
+        <div className="flex justify-center gap-1 mt-2 flex-wrap">
           {types.map((type) => {
             const color = typeColors[type.toLowerCase()] || '#A8A878';
             return (
               <span
                 key={type}
-                className="text-xs font-medium px-2 py-1 rounded-full capitalize text-white/90 shadow-md backdrop-blur-sm transition-all duration-300"
+                className="text-xs md:text-sm font-medium px-2 py-1 rounded-full capitalize text-white/90 shadow-md backdrop-blur-sm truncate"
                 style={{
                   background: `linear-gradient(135deg, ${color}90, ${color}60)`,
                   boxShadow: `0 0 10px ${color}40`,
@@ -148,24 +151,28 @@ const PokemonCard: React.FC<Pokemon> = ({
           })}
         </div>
 
-        <div className="mt-4 flex justify-center gap-6 text-sm text-white/90">
-          <div className="flex flex-col items-center">
-            <span className="font-semibold text-base">
+        <div className="mt-3 flex justify-center gap-4 md:gap-6 text-sm md:text-base text-white/90 flex-wrap">
+          <div className="flex flex-col items-center overflow-hidden">
+            <span className="font-semibold truncate">
               {(height / 10).toFixed(1)}m
             </span>
-            <p className="opacity-70 text-xs tracking-wide">Height</p>
+            <p className="opacity-70 text-xs md:text-sm tracking-wide truncate">
+              Height
+            </p>
           </div>
-          <div className="flex flex-col items-center">
-            <span className="font-semibold text-base">
+          <div className="flex flex-col items-center overflow-hidden">
+            <span className="font-semibold truncate">
               {(weight / 10).toFixed(1)}kg
             </span>
-            <p className="opacity-70 text-xs tracking-wide">Weight</p>
+            <p className="opacity-70 text-xs md:text-sm tracking-wide truncate">
+              Weight
+            </p>
           </div>
         </div>
       </div>
 
       {/* Soft overlay */}
-      <div className="absolute inset-0 bg-gradient-to-t from-transparent via-white/5 to-transparent opacity-20 group-hover:opacity-40 transition-opacity duration-700 pointer-events-none rounded-2xl" />
+      <div className="absolute inset-0 bg-gradient-to-t from-transparent via-white/5 to-transparent opacity-20 group-hover:opacity-40 transition-opacity duration-700 pointer-events-none" />
     </div>
   );
 };
