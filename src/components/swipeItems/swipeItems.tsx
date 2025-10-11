@@ -169,7 +169,7 @@ function SwipeableGrid<T>({
   // Responsive grid classes
   const getGridCols = () => {
     if (columns === 1) return 'grid-cols-1';
-    if (columns === 2) return 'grid-cols-2 md:grid-cols-3';
+    if (columns === 2) return 'grid-cols-2 md:grid-cols-4';
     return 'grid-cols-3 md:grid-cols-4';
   };
 
@@ -202,7 +202,7 @@ function SwipeableGrid<T>({
                 {page.map((item) => (
                   <div
                     key={keyExtractor(item)}
-                    className="transition-transform hover:scale-[1.03] active:scale-[0.97] cursor-pointer"
+                    className="transition-transform hover:scale-[1.03] active:scale-[0.97] cursor-pointer "
                   >
                     {renderItem(item)}
                   </div>
@@ -226,7 +226,7 @@ function SwipeableGrid<T>({
       )}
 
       {/* Page indicators */}
-      {showIndicators && totalPages > 1 && (
+      {/* {showIndicators && totalPages > 1 && (
         <div className="flex justify-center gap-2 mt-4">
           {Array.from({ length: totalPages }).map((_, idx) => (
             <button
@@ -243,7 +243,7 @@ function SwipeableGrid<T>({
             />
           ))}
         </div>
-      )}
+      )} */}
 
       {/* Desktop arrows */}
       {showArrows && totalPages > 1 && (

@@ -27,21 +27,22 @@ const PokemonPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-500 to-purple-600 text-white">
-      <header className="text-center py-10 px-4">
-        <h1 className="text-4xl font-bold mb-4">Pokémon Gallery</h1>
+      <header className="text-center py-10 px-4 sm:px-6 md:px-6 lg:px-10">
+        <h4 className="text-4xl font-bold mb-2">Pokémon Gallery</h4>
       </header>
 
-      <section className="px-4 sm:px-6 md:px-10 pb-10">
+      <section>
+        {/* className="px-4 sm:px-6 md:px-10 pb-10"> */}
         <SwipeableGrid
           items={pokemons}
           renderItem={(poke) => <PokemonCard {...poke} />}
           keyExtractor={(poke) => poke.name}
-          itemsPerPage={3}
-          columns={3}
+          itemsPerPage={2}
+          columns={2}
           gap={1}
         />
 
-        {hasMore && (
+        {/* {hasMore && (
           <div className="flex justify-center mt-6">
             <button
               onClick={loadNextPage}
@@ -51,7 +52,7 @@ const PokemonPage: React.FC = () => {
               {loading ? 'Loading...' : 'Load More'}
             </button>
           </div>
-        )}
+        )} */}
       </section>
     </div>
   );

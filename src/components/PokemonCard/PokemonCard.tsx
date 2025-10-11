@@ -102,14 +102,9 @@ const PokemonCard: React.FC<Pokemon> = ({
       ref={cardRef}
       onClick={handleTap}
       className={`group relative rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 select-none
-        hover:scale-[1.03] active:scale-[0.98]
-        ${isPulsing ? 'scale-[0.98]' : ''}
-        ${rarityGlow[rarity]}`}
-      style={{
-        background: `linear-gradient(145deg, ${primaryColor}25, ${secondaryColor}15)`,
-        minHeight: '300px',
-        padding: '1rem',
-      }}
+      hover:scale-[1.03] active:scale-[0.98]
+      ${isPulsing ? 'scale-[0.98]' : ''}
+      ${rarityGlow[rarity]}`}
     >
       {/* Animated overlay */}
       <div
