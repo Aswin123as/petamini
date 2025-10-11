@@ -6,19 +6,19 @@ import SwipeableGrid from '@/components/swipeItems/swipeItems';
 
 const PokemonPage: React.FC = () => {
   const [pokemons, setPokemons] = useState<Pokemon[]>([]);
-  const [loading, setLoading] = useState(true);
+  // const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
-  const [hasMore, setHasMore] = useState(true);
+  // const [hasMore, setHasMore] = useState(true);
 
   const loadNextPage = async () => {
-    setLoading(true);
+    // setLoading(true);
     const newPokemons = await fetchPokemonPage(page);
     setPokemons((prev) => [...prev, ...newPokemons]);
     setPage((prev) => prev + 1);
-    setLoading(false);
+    // setLoading(false);
 
     // Check if we reached total Pokémon
-    if (newPokemons.length < 20) setHasMore(false);
+    // if (newPokemons.length < 20) setHasMore(false);
   };
 
   useEffect(() => {

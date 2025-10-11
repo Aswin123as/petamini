@@ -33,7 +33,7 @@ function SwipeableGrid<T>({
   itemsPerPage = 1,
   columns = 1,
   gap = 4,
-  showIndicators = true,
+  // showIndicators = true,
   showArrows = true,
   loop = false,
   onPageChange,
