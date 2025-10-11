@@ -5,7 +5,7 @@ import { InitDataPage } from '@/pages/InitDataPage.tsx';
 import { LaunchParamsPage } from '@/pages/LaunchParamsPage.tsx';
 import { ThemeParamsPage } from '@/pages/ThemeParamsPage.tsx';
 import { TONConnectPage } from '@/pages/TONConnectPage/TONConnectPage';
-import  PokemonPage  from '@/pages/PokemonPage/PokemonPage';
+import PokemonPage from '@/pages/PokemonPage/PokemonPage';
 
 interface Route {
   path: string;
@@ -15,11 +15,15 @@ interface Route {
 }
 
 export const routes: Route[] = [
-  { path: '/', Component: IndexPage },
+  { path: '/', Component: PokemonPage, title: 'Home' },
   { path: '/init-data', Component: InitDataPage, title: 'Init Data' },
   { path: '/theme-params', Component: ThemeParamsPage, title: 'Theme Params' },
-  { path: '/launch-params', Component: LaunchParamsPage, title: 'Launch Params' },
-    { path: '/pokemon', Component: PokemonPage, title: 'Launch Params' },
+  {
+    path: '/launch-params',
+    Component: LaunchParamsPage,
+    title: 'Launch Params',
+  },
+  { path: '/pokemon', Component: PokemonPage, title: 'Launch Params' },
   {
     path: '/ton-connect',
     Component: TONConnectPage,
