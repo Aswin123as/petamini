@@ -32,7 +32,7 @@ function SwipeableGrid<T>({
   keyExtractor,
   itemsPerPage = 1,
   columns = 1,
-  gap = 4,
+  gap = 2,
   // showIndicators = true,
   showArrows = true,
   loop = false,
@@ -173,8 +173,8 @@ function SwipeableGrid<T>({
     return 'grid-cols-3 md:grid-cols-4';
   };
 
-  // const gapClass = `gap-${gap}`;
-  const gapClass = `gap-2`;
+  const gapClass = `gap-${gap}`;
+  // const gapClass = `gap-2`;
 
   return (
     <div

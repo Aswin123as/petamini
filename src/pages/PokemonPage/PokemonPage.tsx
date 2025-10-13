@@ -39,7 +39,7 @@ const PokemonPage: React.FC = () => {
           keyExtractor={(poke) => poke.name}
           itemsPerPage={2}
           columns={2}
-          gap={1}
+          gap={2}
         />
 
         {/* {hasMore && (
