@@ -37,7 +37,7 @@ const PokemonPage: React.FC = () => {
           items={pokemons}
           renderItem={(poke) => <PokemonCard {...poke} />}
           keyExtractor={(poke) => poke.name}
-          itemsPerPage={2}
+          itemsPerPage={4}
           columns={2}
           gap={2}
         />
