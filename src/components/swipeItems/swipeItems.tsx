@@ -173,7 +173,8 @@ function SwipeableGrid<T>({
     return 'grid-cols-3 md:grid-cols-4';
   };
 
-  const gapClass = `gap-${gap}`;
+  // const gapClass = `gap-${gap}`;
+  const gapClass = `gap-2`;
 
   return (
     <div
@@ -197,7 +198,7 @@ function SwipeableGrid<T>({
           }}
         >
           {pageItems.map((page, idx) => (
-            <div key={idx} className="flex-shrink-0 w-full px-4 py-4">
+            <div key={idx} className="flex-shrink-0 w-full px-6 py-4">
               <div className={`grid ${getGridCols()} ${gapClass}`}>
                 {page.map((item) => (
                   <div
