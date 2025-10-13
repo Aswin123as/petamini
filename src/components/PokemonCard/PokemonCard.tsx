@@ -168,7 +168,7 @@ const PokemonCard: React.FC<Pokemon> = ({
           </div>
 
           {/* Stats */}
-          <div className="flex justify-center gap-8 text-white/90 pt-1">
+          <div className="flex justify-center gap-4 text-white/90 pt-1">
             <div className="flex flex-col items-center">
               <span className="text-lg font-bold">
                 {(height / 10).toFixed(1)}m

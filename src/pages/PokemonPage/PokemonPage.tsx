@@ -27,8 +27,8 @@ const PokemonPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-500 to-purple-600 text-white">
-      <header className="text-center py-10 px-4 sm:px-6 md:px-6 lg:px-10">
-        <h4 className="text-4xl font-bold mb-2">Pokémon Gallery</h4>
+      <header className="text-center py-1 px-6 sm:px-4 md:px-6 lg:px-10">
+        <h6 className="text-4xl font-bold mb-2">Pokémon Gallery</h6>
       </header>
 
       <section>
