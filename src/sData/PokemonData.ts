@@ -13,7 +13,7 @@ export interface Pokemon {
 }
 
 const TOTAL_POKEMONS = 151;
-export const PAGE_SIZE = 20;
+export const PAGE_SIZE = 160;
 
 // In-memory cache for the session
 let cachedPokemons: Pokemon[] = [];
