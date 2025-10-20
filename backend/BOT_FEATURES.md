@@ -11,21 +11,24 @@ The PetaMini bot now includes comprehensive features for managing Pokemon card c
 ### Basic Commands
 
 #### `/start`
+
 **Description:** Welcome message and account creation  
 **Usage:** `/start`  
 **Features:**
+
 - Creates user account in database
 - Shows welcome message
 - Lists available commands
 - Perfect for new users!
 
 **Example Response:**
+
 ```
 🎮 Welcome to PetaMini - Pokemon Card Collection!
 
 Hey John! 👋
 
-Collect rare Pokemon cards and build your ultimate collection! 
+Collect rare Pokemon cards and build your ultimate collection!
 
 🃏 What you can do:
 • Buy Pokemon cards with Telegram Stars ⭐
@@ -37,9 +40,11 @@ Collect rare Pokemon cards and build your ultimate collection!
 ---
 
 #### `/help`
+
 **Description:** Show all available commands  
 **Usage:** `/help`  
 **Features:**
+
 - Complete command list
 - How to buy cards
 - Rarity information
@@ -50,15 +55,18 @@ Collect rare Pokemon cards and build your ultimate collection!
 ### Collection Commands
 
 #### `/collection`
+
 **Description:** View your owned Pokemon cards  
 **Usage:** `/collection`  
 **Features:**
+
 - Shows all your Pokemon cards
 - Groups cards by Pokemon name
 - Displays total cards and stars spent
 - Empty state for new users
 
 **Example Response:**
+
 ```
 🎴 John's Pokemon Collection
 
@@ -74,15 +82,18 @@ Your Cards:
 ---
 
 #### `/profile`
+
 **Description:** View your account profile  
 **Usage:** `/profile`  
 **Features:**
+
 - Basic account info
 - Account creation date
 - Total collection summary
 - Last activity timestamp
 
 **Example Response:**
+
 ```
 👤 Profile Information
 
@@ -107,9 +118,11 @@ Collection:
 ### Statistics Commands
 
 #### `/stats`
+
 **Description:** View detailed personal statistics  
 **Usage:** `/stats`  
 **Features:**
+
 - Total cards and unique Pokemon
 - Purchase history
 - Average spending per purchase
@@ -118,6 +131,7 @@ Collection:
 - Most recent purchase
 
 **Example Response:**
+
 ```
 📊 Your Statistics
 
@@ -144,15 +158,18 @@ Collection:
 ---
 
 #### `/leaderboard`
+
 **Description:** View top collectors  
 **Usage:** `/leaderboard`  
 **Features:**
+
 - Shows top 10 collectors
 - Ranked by total stars spent
 - Medal emojis for top 3
 - Shows cards, purchases, and spending
 
 **Example Response:**
+
 ```
 🏆 Top Collectors Leaderboard
 
@@ -172,15 +189,18 @@ Collection:
 ---
 
 #### `/shop`
+
 **Description:** View shop information  
 **Usage:** `/shop`  
 **Features:**
+
 - Rarity pricing guide
 - How to purchase
 - Link to mini app
 - Limited units warning
 
 **Example Response:**
+
 ```
 🏪 Pokemon Card Shop
 
@@ -202,13 +222,17 @@ All endpoints are RESTful and return JSON responses.
 ### User Endpoints
 
 #### Get User Profile
+
 ```
 GET /api/users/profile/:userId
 ```
+
 **Parameters:**
+
 - `userId` (path) - Telegram user ID
 
 **Response:**
+
 ```json
 {
   "id": "670f1234567890abcdef",
@@ -227,13 +251,17 @@ GET /api/users/profile/:userId
 ---
 
 #### Get User Statistics
+
 ```
 GET /api/users/stats/:userId
 ```
+
 **Parameters:**
+
 - `userId` (path) - Telegram user ID
 
 **Response:**
+
 ```json
 {
   "telegramId": 123456789,
@@ -250,13 +278,17 @@ GET /api/users/stats/:userId
 ---
 
 #### Get User Collection
+
 ```
 GET /api/users/collection/:userId
 ```
+
 **Parameters:**
+
 - `userId` (path) - Telegram user ID
 
 **Response:**
+
 ```json
 {
   "userId": 123456789,
@@ -281,13 +313,17 @@ GET /api/users/collection/:userId
 ---
 
 #### Get Leaderboard
+
 ```
 GET /api/users/leaderboard?limit=10
 ```
+
 **Query Parameters:**
+
 - `limit` (optional) - Number of entries (1-100, default: 10)
 
 **Response:**
+
 ```json
 {
   "leaderboard": [
@@ -307,13 +343,17 @@ GET /api/users/leaderboard?limit=10
 ---
 
 #### Get Top Collectors
+
 ```
 GET /api/users/top?limit=10
 ```
+
 **Query Parameters:**
+
 - `limit` (optional) - Number of users (1-100, default: 10)
 
 **Response:**
+
 ```json
 {
   "collectors": [
@@ -335,6 +375,7 @@ GET /api/users/top?limit=10
 ## 🎮 User Flow Examples
 
 ### New User Journey
+
 1. User opens bot → `/start` command
 2. Bot creates user account in database
 3. User sees welcome message with commands
@@ -345,6 +386,7 @@ GET /api/users/top?limit=10
 8. User competes on `/leaderboard`
 
 ### Regular User Journey
+
 1. User opens mini app
 2. Purchases Pokemon cards
 3. Runs `/collection` to check cards
@@ -357,6 +399,7 @@ GET /api/users/top?limit=10
 ## 📊 Database Schema Updates
 
 ### User Model (Enhanced)
+
 ```go
 type User struct {
     ID             ObjectID       // MongoDB ID
@@ -375,6 +418,7 @@ type User struct {
 ### New Models
 
 #### UserStats
+
 ```go
 type UserStats struct {
     TelegramID     int64
@@ -389,6 +433,7 @@ type UserStats struct {
 ```
 
 #### LeaderboardEntry
+
 ```go
 type LeaderboardEntry struct {
     Rank           int
@@ -407,15 +452,18 @@ type LeaderboardEntry struct {
 ### Test Bot Locally
 
 1. **Start the backend:**
+
 ```powershell
 cd backend
 go run main.go
 ```
 
 2. **Open your bot in Telegram:**
+
    - Search for your bot (@YourBotName)
 
 3. **Test commands:**
+
 ```
 /start
 /help
@@ -447,17 +495,21 @@ curl http://localhost:8080/api/users/collection/123456789
 ## 🎨 Customization Tips
 
 ### Modify Welcome Message
+
 Edit `handlers/bot_command_handler.go` → `handleStart()` function
 
 ### Add Custom Commands
+
 1. Add case in `HandleCommand()` switch statement
 2. Create handler function
 3. Bot automatically responds!
 
 ### Change Leaderboard Size
+
 Modify limit in `/leaderboard` command or API call
 
 ### Add Achievements
+
 Extend `User` model with achievements array
 Create achievement checking logic
 Display in `/profile` or `/stats`
@@ -467,16 +519,19 @@ Display in `/profile` or `/stats`
 ## 🐛 Troubleshooting
 
 **Command not responding:**
+
 - Check bot is running (`go run main.go`)
 - Verify bot token in `.env` file
 - Check logs for errors
 
 **User data not showing:**
+
 - User must run `/start` first
 - Check MongoDB connection
 - Verify user made at least one purchase
 
 **Leaderboard empty:**
+
 - Need multiple users with purchases
 - Check database has user records
 
@@ -485,6 +540,7 @@ Display in `/profile` or `/stats`
 ## 🎯 Next Steps
 
 **Suggested Enhancements:**
+
 1. **Achievements System** - Badges for milestones
 2. **Trading System** - Trade cards between users
 3. **Daily Rewards** - Login bonuses
