@@ -27,12 +27,15 @@ func NewPaymentHandler(paymentService *services.PaymentService) *PaymentHandler 
 func (h *PaymentHandler) CreateInvoice(c *gin.Context) {
 	var req models.CreateInvoiceRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
+		log.Printf("Invalid request body: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error":   "Invalid request",
 			"details": err.Error(),
 		})
 		return
 	}
+
+	log.Printf("Creating invoice for user %d, pokemon %s, units %d", req.UserID, req.PokemonID, req.Units)
 
 	invoice, err := h.paymentService.CreateInvoice(c.Request.Context(), req)
 	if err != nil {

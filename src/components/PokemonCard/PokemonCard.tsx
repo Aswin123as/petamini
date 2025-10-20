@@ -249,7 +249,7 @@ const PokemonCard: React.FC<PokemonCardProps> = ({
     try {
       // Get Telegram user ID
       const tg = window.Telegram?.WebApp;
-      const userId = tg?.initDataUnsafe?.user?.id || 0;
+      const userId = tg?.initDataUnsafe?.user?.id || 123456789; // Use test user ID for development
 
       // Create invoice record in backend
       console.log('Creating invoice record in backend...');

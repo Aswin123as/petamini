@@ -65,7 +65,7 @@ type OwnedPokemon struct {
 type CreateInvoiceRequest struct {
 	PokemonID string `json:"pokemonId" binding:"required"`
 	Units     int    `json:"units" binding:"required,min=1"`
-	UserID    int64  `json:"userId" binding:"required"`
+	UserID    int64  `json:"userId" binding:"required,min=1"`
 }
 
 // CreateInvoiceResponse represents the response with invoice details
