@@ -28,7 +28,28 @@ const PokemonPage: React.FC = () => {
       content: (
         <SwipeableGrid
           items={pokemons}
-          renderItem={(poke) => <PokemonCard {...poke} id={String(poke.id)} />}
+          renderItem={(poke) => (
+            <PokemonCard
+              {...poke}
+              id={String(poke.id)}
+              onPurchase={async (pokemonId: string, units: number) => {
+                console.log(
+                  `Successfully purchased ${units} units of Pokemon ${pokemonId}`
+                );
+                // Here you could update the local state to reflect the purchase
+                setPokemons((prev) =>
+                  prev.map((p) =>
+                    String(p.id) === pokemonId
+                      ? {
+                          ...p,
+                          availableUnits: (p.availableUnits || 0) - units,
+                        }
+                      : p
+                  )
+                );
+              }}
+            />
+          )}
           keyExtractor={(poke) => poke.name}
           itemsPerPage={4}
           columns={2}

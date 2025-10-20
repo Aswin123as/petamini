@@ -10,6 +10,11 @@ export interface Pokemon {
   abilities?: string[];
   moves?: string[];
   evolution?: string[];
+  // Purchase-related properties
+  totalUnits?: number;
+  availableUnits?: number;
+  pricePerUnit?: number; // Telegram Stars per unit
+  rarity?: 'common' | 'rare' | 'legendary';
 }
 
 const TOTAL_POKEMONS = 151;
@@ -34,6 +39,16 @@ export const fetchPokemonData = async (id: number): Promise<Pokemon | null> => {
       data.sprites?.front_default ||
       '';
 
+    // Determine rarity based on Pokemon ID
+    const getRarity = (id: number): 'common' | 'rare' | 'legendary' => {
+      if (id >= 144 && id <= 151) return 'legendary'; // Legendary birds + Mew
+      if (id >= 130 && id <= 143) return 'rare'; // Pseudo-legendaries and rare Pokemon
+      return 'common';
+    };
+
+    const rarity = getRarity(data.id);
+    const basePriceByRarity = { common: 5, rare: 15, legendary: 50 };
+
     const p: Pokemon = {
       id: data.id,
       name: data.name,
@@ -43,6 +58,15 @@ export const fetchPokemonData = async (id: number): Promise<Pokemon | null> => {
         : [],
       height: data.height ?? 0,
       weight: data.weight ?? 0,
+      rarity,
+      totalUnits: rarity === 'legendary' ? 10 : rarity === 'rare' ? 50 : 100,
+      availableUnits:
+        rarity === 'legendary'
+          ? Math.floor(Math.random() * 5) + 3
+          : rarity === 'rare'
+          ? Math.floor(Math.random() * 20) + 15
+          : Math.floor(Math.random() * 50) + 25,
+      pricePerUnit: basePriceByRarity[rarity],
     };
 
     return p;
