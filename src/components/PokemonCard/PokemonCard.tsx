@@ -249,23 +249,34 @@ const PokemonCard: React.FC<PokemonCardProps> = ({
     try {
       // Get Telegram user ID
       const tg = window.Telegram?.WebApp;
-      const userId = tg?.initDataUnsafe?.user?.id || 123456789; // Use test user ID for development
+      const userId = tg?.initDataUnsafe?.user?.id;
+
+      // Validate that we have a real Telegram user
+      if (!userId) {
+        throw new Error(
+          'This feature only works in Telegram. Please open the app from Telegram.'
+        );
+      }
 
       // Create invoice record in backend
       console.log('Creating invoice record in backend...');
-      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8080';
-      
-      const invoiceResponse = await fetch(`${backendUrl}/api/payments/create-invoice`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          pokemonId: id,
-          units: selectedUnits,
-          userId: userId,
-        }),
-      });
+      const backendUrl =
+        import.meta.env.VITE_BACKEND_URL || 'http://localhost:8080';
+
+      const invoiceResponse = await fetch(
+        `${backendUrl}/api/payments/create-invoice`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            pokemonId: id,
+            units: selectedUnits,
+            userId: userId,
+          }),
+        }
+      );
 
       if (!invoiceResponse.ok) {
         throw new Error('Failed to create invoice');
@@ -333,7 +344,7 @@ const PokemonCard: React.FC<PokemonCardProps> = ({
         if (onPurchase) {
           await onPurchase(id, selectedUnits);
         }
-        
+
         // Show success status for testing
         setPaymentStatus('success');
         setTimeout(() => setPaymentStatus(null), 3000);
@@ -343,7 +354,8 @@ const PokemonCard: React.FC<PokemonCardProps> = ({
       setPaymentStatus('failed');
       setTimeout(() => setPaymentStatus(null), 3000);
     }
-  }, [id, selectedUnits, name, pricePerUnit, onPurchase]);  const unitProgress =
+  }, [id, selectedUnits, name, pricePerUnit, onPurchase]);
+  const unitProgress =
     totalUnits > 0 ? ((totalUnits - availableUnits) / totalUnits) * 100 : 0;
 
   return (

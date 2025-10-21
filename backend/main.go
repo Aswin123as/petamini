@@ -41,6 +41,7 @@ func main() {
 	paymentHandler := handlers.NewPaymentHandler(paymentService)
 	webhookHandler := handlers.NewWebhookHandler(bot, paymentService)
 	userHandler := handlers.NewUserHandler(userService)
+	pokemonHandler := handlers.NewPokemonHandler(db.Database)
 	botCommandHandler := handlers.NewBotCommandHandler(bot, paymentService, userService)
 
 	// Setup Gin router
@@ -65,6 +66,13 @@ func main() {
 	// API routes
 	api := router.Group("/api")
 	{
+		// Pokemon routes
+		pokemons := api.Group("/pokemons")
+		{
+			pokemons.GET("", pokemonHandler.GetAllPokemon)
+			pokemons.GET("/:id", pokemonHandler.GetPokemonByID)
+		}
+
 		// Payment routes
 		payments := api.Group("/payments")
 		{

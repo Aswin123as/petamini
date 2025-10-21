@@ -4,20 +4,30 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 	"time"
 
+	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func main() {
-	// Load configuration
-	mongoURI := "mongodb+srv://username:password@cluster.mongodb.net/?retryWrites=true&w=majority"
-	dbName := "petamini"
+	// Load .env file
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found, using environment variables")
+	}
+
+	// Load configuration from environment
+	mongoURI := os.Getenv("MONGODB_URI")
+	dbName := os.Getenv("DATABASE_NAME")
+
+	if mongoURI == "" || dbName == "" {
+		log.Fatal("❌ MONGODB_URI and DATABASE_NAME must be set in .env file")
+	}
 
 	fmt.Println("🔄 Initializing database...")
-	fmt.Println("MongoDB URI:", mongoURI)
 	fmt.Println("Database Name:", dbName)
 
 	// Connect to MongoDB
