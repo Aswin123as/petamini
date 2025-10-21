@@ -42,6 +42,7 @@ func main() {
 	webhookHandler := handlers.NewWebhookHandler(bot, paymentService)
 	userHandler := handlers.NewUserHandler(userService)
 	pokemonHandler := handlers.NewPokemonHandler(db.Database)
+	linkerHandler := handlers.NewLinkerHandler(db.Database)
 	botCommandHandler := handlers.NewBotCommandHandler(bot, paymentService, userService)
 
 	// Setup Gin router
@@ -89,6 +90,16 @@ func main() {
 			users.GET("/collection/:userId", userHandler.GetUserCollection)
 			users.GET("/leaderboard", userHandler.GetLeaderboard)
 			users.GET("/top", userHandler.GetTopCollectors)
+		}
+
+		// Linker routes
+		linkers := api.Group("/linkers")
+		{
+			linkers.GET("", linkerHandler.GetAllLinkers)
+			linkers.POST("", linkerHandler.CreateLinker)
+			linkers.POST("/:id/promote", linkerHandler.PromoteLinker)
+			linkers.DELETE("/:id", linkerHandler.DeleteLinker)
+			linkers.GET("/tag/:tag", linkerHandler.GetLinkersByTag)
 		}
 
 		// Telegram webhook

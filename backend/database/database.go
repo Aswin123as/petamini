@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"crypto/tls"
 	"log"
 	"time"
 
@@ -17,10 +18,22 @@ type MongoDB struct {
 
 // ConnectDB establishes a connection to MongoDB
 func ConnectDB(uri, dbName string) (*MongoDB, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	clientOptions := options.Client().ApplyURI(uri)
+	// Configure TLS for Windows
+	tlsConfig := &tls.Config{
+		InsecureSkipVerify: false,
+		MinVersion:         tls.VersionTLS12,
+		MaxVersion:         tls.VersionTLS12,
+	}
+
+	clientOptions := options.Client().
+		ApplyURI(uri).
+		SetTLSConfig(tlsConfig).
+		SetServerSelectionTimeout(30 * time.Second).
+		SetConnectTimeout(30 * time.Second)
+
 	client, err := mongo.Connect(ctx, clientOptions)
 	if err != nil {
 		return nil, err

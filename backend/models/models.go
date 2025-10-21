@@ -108,3 +108,26 @@ type LeaderboardEntry struct {
 	TotalPurchases int    `json:"totalPurchases"`
 	TotalSpent     int    `json:"totalSpent"`
 }
+
+// Linker represents a link/post shared by users
+type Linker struct {
+	ID         primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+	UserID     int64              `bson:"user_id" json:"userId"`           // Telegram User ID
+	Username   string             `bson:"username" json:"username"`
+	Content    string             `bson:"content" json:"content"`          // The link or text content
+	Type       string             `bson:"type" json:"type"`                // "url" or "text"
+	Tags       []string           `bson:"tags" json:"tags"`                // Array of tags
+	Promotions int                `bson:"promotions" json:"promotions"`    // Number of promotions
+	PromotedBy []int64            `bson:"promoted_by" json:"promotedBy"`   // User IDs who promoted
+	Timestamp  time.Time          `bson:"timestamp" json:"timestamp"`
+	CreatedAt  time.Time          `bson:"created_at" json:"createdAt"`
+}
+
+// CreateLinkerRequest represents the request to create a linker
+type CreateLinkerRequest struct {
+	UserID   int64    `json:"userId" binding:"required,min=1"`
+	Username string   `json:"username" binding:"required"`
+	Content  string   `json:"content" binding:"required"`
+	Type     string   `json:"type" binding:"required,oneof=url text"`
+	Tags     []string `json:"tags"`
+}
