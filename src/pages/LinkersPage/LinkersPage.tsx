@@ -436,7 +436,7 @@ export default function LinkSharingApp() {
                 <button
                   onClick={handleSubmit}
                   disabled={submitting || !inputText.trim()}
-                  className="px-3 py-1.5 text-xs font-medium text-white bg-gray-900 rounded-md hover:bg-gray-800 active:bg-gray-950 focus:outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+                  className="px-3 py-1.5 text-xs font-medium text-white bg-gray-900 rounded-md active:bg-gray-800 focus:outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
                 >
                   {submitting && <Loader2 className="w-3 h-3 animate-spin" />}
                   Post
