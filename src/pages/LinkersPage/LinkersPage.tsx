@@ -8,9 +8,13 @@ import {
   Tag,
   Loader2,
   AlertCircle,
+  Edit2,
+  Trash2,
+  User,
 } from 'lucide-react';
 import { linkerService } from '@/services/linkerService.ts';
 import Toast from '@/components/Toast/Toast';
+import { EditPostModal } from '@/components/EditPostModal/EditPostModal';
 
 interface LinkPreview {
   title: string | null;
@@ -72,7 +76,9 @@ export default function LinkSharingApp() {
   const [links, setLinks] = useState<Link[]>([]);
   const [inputText, setInputText] = useState('');
   const [inputTags, setInputTags] = useState('');
-  const [sortBy, setSortBy] = useState<'recent' | 'popular'>('recent');
+  const [sortBy, setSortBy] = useState<'recent' | 'popular' | 'my-posts'>(
+    'recent'
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<ToastState>({
@@ -80,6 +86,7 @@ export default function LinkSharingApp() {
     message: '',
     type: 'success',
   });
+  const [editingLink, setEditingLink] = useState<Link | null>(null);
 
   const showToast = (
     message: string,
@@ -100,7 +107,8 @@ export default function LinkSharingApp() {
     try {
       setLoading(true);
       setError(null);
-      const data = await linkerService.getAllLinkers(sortBy);
+      const sortParam = sortBy === 'my-posts' ? 'recent' : sortBy;
+      const data = await linkerService.getAllLinkers(sortParam);
 
       // Convert backend data to frontend format
       const convertedLinks: Link[] = data.map((linker) => ({
@@ -267,12 +275,62 @@ export default function LinkSharingApp() {
     }
   };
 
-  const getSortedLinks = () => {
-    const sorted = [...links];
-    if (sortBy === 'popular') {
-      return sorted.sort((a, b) => b.promotions - a.promotions);
+  const handleEdit = (link: Link) => {
+    setEditingLink(link);
+  };
+
+  const handleSaveEdit = async (content: string, tags: string[]) => {
+    if (!editingLink) return;
+
+    try {
+      const updated = await linkerService.updateLinker(editingLink.id, {
+        content,
+        tags,
+      });
+
+      setLinks(
+        links.map((link) =>
+          link.id === editingLink.id
+            ? { ...link, content: updated.content, tags: updated.tags }
+            : link
+        )
+      );
+
+      setEditingLink(null);
+      showToast('Post updated successfully!', 'success');
+    } catch (err) {
+      console.error('Error updating post:', err);
+      showToast('Failed to update post', 'error');
     }
-    return sorted.sort(
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this post?')) {
+      return;
+    }
+
+    try {
+      await linkerService.deleteLinker(id);
+      setLinks(links.filter((link) => link.id !== id));
+      showToast('Post deleted successfully!', 'success');
+    } catch (err) {
+      console.error('Error deleting post:', err);
+      showToast('Failed to delete post', 'error');
+    }
+  };
+
+  const getSortedLinks = () => {
+    let filtered = [...links];
+
+    // Filter by user for my-posts tab
+    if (sortBy === 'my-posts' && telegramUser) {
+      filtered = filtered.filter((link) => link.userId === telegramUser.id);
+    }
+
+    if (sortBy === 'popular') {
+      return filtered.sort((a, b) => b.promotions - a.promotions);
+    }
+    return filtered.sort(
       (a, b) =>
         new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
     );
@@ -403,6 +461,17 @@ export default function LinkSharingApp() {
           >
             <Flame size={14} />
             Popular
+          </button>
+          <button
+            onClick={() => setSortBy('my-posts')}
+            className={`flex items-center gap-1 px-3 py-2 text-xs font-medium transition-colors ${
+              sortBy === 'my-posts'
+                ? 'text-gray-900 border-b-2 border-gray-900'
+                : 'text-gray-600 active:text-gray-900'
+            }`}
+          >
+            <User size={14} />
+            My Posts
           </button>
         </div>
 
@@ -565,8 +634,30 @@ export default function LinkSharingApp() {
                       </div>
                     )}
 
-                    <div className="mt-1.5 text-[10px] text-gray-500">
-                      {getTimeAgo(link.timestamp)}
+                    <div className="mt-1.5 flex items-center justify-between">
+                      <div className="text-[10px] text-gray-500">
+                        {getTimeAgo(link.timestamp)}
+                      </div>
+                      
+                      {/* Edit/Delete buttons for own posts */}
+                      {telegramUser && link.userId === telegramUser.id && (
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => handleEdit(link)}
+                            className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                            title="Edit post"
+                          >
+                            <Edit2 size={12} />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(link.id)}
+                            className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
+                            title="Delete post"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -581,6 +672,15 @@ export default function LinkSharingApp() {
           </div>
         )}
       </div>
+
+      {/* Edit Modal */}
+      {editingLink && (
+        <EditPostModal
+          link={editingLink}
+          onClose={() => setEditingLink(null)}
+          onSave={handleSaveEdit}
+        />
+      )}
 
       {/* Toast Notifications */}
       {toast.show && (

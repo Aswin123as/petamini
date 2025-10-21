@@ -114,6 +114,37 @@ class LinkerService {
     }
   }
 
+  // Update a linker (edit content and tags)
+  async updateLinker(
+    linkerId: string,
+    userId: number,
+    content: string,
+    tags: string[]
+  ): Promise<Linker> {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/linkers/${linkerId}?userId=${userId}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ content, tags }),
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update linker');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error updating linker:', error);
+      throw error;
+    }
+  }
+
   // Get linkers by tag
   async getLinkersByTag(tag: string): Promise<Linker[]> {
     try {
