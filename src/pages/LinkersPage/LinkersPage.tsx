@@ -279,18 +279,24 @@ export default function LinkSharingApp() {
     setEditingLink(link);
   };
 
-  const handleSaveEdit = async (content: string, tags: string[]) => {
-    if (!editingLink) return;
+  const handleSaveEdit = async (
+    postId: string,
+    content: string,
+    tags: string[]
+  ) => {
+    if (!telegramUser) return;
 
     try {
-      const updated = await linkerService.updateLinker(editingLink.id, {
+      const updated = await linkerService.updateLinker(
+        postId,
+        telegramUser.id,
         content,
-        tags,
-      });
+        tags
+      );
 
       setLinks(
         links.map((link) =>
-          link.id === editingLink.id
+          link.id === postId
             ? { ...link, content: updated.content, tags: updated.tags }
             : link
         )
@@ -305,12 +311,14 @@ export default function LinkSharingApp() {
   };
 
   const handleDelete = async (id: string) => {
+    if (!telegramUser) return;
+
     if (!window.confirm('Are you sure you want to delete this post?')) {
       return;
     }
 
     try {
-      await linkerService.deleteLinker(id);
+      await linkerService.deleteLinker(id, telegramUser.id);
       setLinks(links.filter((link) => link.id !== id));
       showToast('Post deleted successfully!', 'success');
     } catch (err) {
@@ -638,20 +646,20 @@ export default function LinkSharingApp() {
                       <div className="text-[10px] text-gray-500">
                         {getTimeAgo(link.timestamp)}
                       </div>
-                      
+
                       {/* Edit/Delete buttons for own posts */}
                       {telegramUser && link.userId === telegramUser.id && (
                         <div className="flex items-center gap-1">
                           <button
                             onClick={() => handleEdit(link)}
-                            className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                            className="p-1 text-gray-900 hover:bg-gray-100 rounded transition-colors"
                             title="Edit post"
                           >
                             <Edit2 size={12} />
                           </button>
                           <button
                             onClick={() => handleDelete(link.id)}
-                            className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
+                            className="p-1 text-gray-900 hover:bg-gray-100 rounded transition-colors"
                             title="Delete post"
                           >
                             <Trash2 size={12} />
@@ -676,7 +684,9 @@ export default function LinkSharingApp() {
       {/* Edit Modal */}
       {editingLink && (
         <EditPostModal
-          link={editingLink}
+          postId={editingLink.id}
+          initialContent={editingLink.content}
+          initialTags={editingLink.tags}
           onClose={() => setEditingLink(null)}
           onSave={handleSaveEdit}
         />

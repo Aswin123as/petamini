@@ -52,7 +52,7 @@ export function EditPostModal({
     >
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200">
+        <div className="flex items-center justify-between p-4 border-b border-gray-100">
           <h2 className="text-base font-semibold text-gray-900">Edit Post</h2>
           <button
             onClick={onClose}
@@ -67,14 +67,14 @@ export function EditPostModal({
         <div className="p-4 space-y-3">
           {/* Content Input */}
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1.5">
+            <label className="block text-xs font-medium text-gray-900 mb-1.5">
               Content
             </label>
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
               placeholder="Post content..."
-              className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+              className="w-full px-3 py-2 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent resize-none"
               rows={4}
               disabled={saving}
             />
@@ -82,7 +82,7 @@ export function EditPostModal({
 
           {/* Tags Input */}
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1.5">
+            <label className="block text-xs font-medium text-gray-900 mb-1.5">
               Tags (comma separated)
             </label>
             <input
@@ -90,7 +90,7 @@ export function EditPostModal({
               value={tags}
               onChange={(e) => setTags(e.target.value)}
               placeholder="tech, programming, tips"
-              className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 text-xs text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent"
               disabled={saving}
             />
           </div>
@@ -100,7 +100,7 @@ export function EditPostModal({
         <div className="flex items-center justify-end gap-2 p-4 border-t border-gray-200">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-xs font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 active:bg-gray-300 transition-colors"
+            className="px-4 py-2 text-xs font-medium text-gray-900 bg-gray-100 rounded-lg hover:bg-gray-200 active:bg-gray-300 transition-colors"
             disabled={saving}
           >
             Cancel
@@ -108,7 +108,7 @@ export function EditPostModal({
           <button
             onClick={handleSave}
             disabled={!content.trim() || saving}
-            className="px-4 py-2 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 active:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
+            className="px-4 py-2 text-xs font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800 active:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
           >
             {saving ? (
               <>
