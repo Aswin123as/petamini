@@ -181,8 +181,15 @@ export default function LinkSharingApp() {
   }, [links]);
 
   const isUrl = (text: string) => {
+    // Check if text starts with common URL protocols
+    if (text.startsWith('http://') || text.startsWith('https://')) {
+      return true;
+    }
+
+    // Check for common domains and TLDs
     const urlPattern =
-      /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/;
+      /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.\-\+\?=&%#]*)*\/?$/i;
+
     return (
       urlPattern.test(text) ||
       text.includes('.com') ||
@@ -190,7 +197,9 @@ export default function LinkSharingApp() {
       text.includes('.net') ||
       text.includes('.io') ||
       text.includes('.dev') ||
-      text.includes('.co')
+      text.includes('.co') ||
+      text.includes('t.me/') || // Telegram links
+      text.includes('telegram.me/') // Telegram alternative domain
     );
   };
 
@@ -408,7 +417,7 @@ export default function LinkSharingApp() {
       <div className="max-w-2xl mx-auto px-3 py-4 pb-20">
         {/* Header */}
         <div className="mb-4 flex items-center gap-2">
-          <h1 className="text-xl font-semibold text-gray-900">Links</h1>
+          <h1 className="text-xl font-semibold text-gray-900">Linkers</h1>
           <span className="text-gray-300">·</span>
           <p className="text-xs text-gray-600">Share and discover links</p>
         </div>
