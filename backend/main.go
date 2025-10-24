@@ -139,7 +139,34 @@ func main() {
 // corsMiddleware adds CORS headers
 func corsMiddleware(frontendURL string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		c.Writer.Header().Set("Access-Control-Allow-Origin", frontendURL)
+		origin := c.Request.Header.Get("Origin")
+		
+		// Allow multiple origins in development
+		allowedOrigins := []string{
+			frontendURL,
+			"http://localhost:5173",
+			"http://127.0.0.1:5173",
+			"http://192.168.18.124:5173",
+			"https://perfectly-advice-ctrl-architects.trycloudflare.com",
+		}
+		
+		// Check if origin is allowed
+		allowed := false
+		for _, allowedOrigin := range allowedOrigins {
+			if origin == allowedOrigin {
+				allowed = true
+				break
+			}
+		}
+		
+		// Set CORS headers
+		if allowed {
+			c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
+		} else {
+			// Default to configured frontend URL
+			c.Writer.Header().Set("Access-Control-Allow-Origin", frontendURL)
+		}
+		
 		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE")

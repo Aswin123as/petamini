@@ -194,6 +194,13 @@ export default function LinkSharingApp() {
       return;
     }
 
+    // Check word count (250 word limit)
+    const wordCount = trimmedText.split(/\s+/).length;
+    if (wordCount > 250) {
+      showToast('Post must be 250 words or less', 'error');
+      return;
+    }
+
     let content = trimmedText;
     let type: 'url' | 'text' = 'text';
 
@@ -207,11 +214,16 @@ export default function LinkSharingApp() {
       }
     }
 
-    // Process tags
+    // Process tags (limit to 2 tags)
     const tags = inputTags
       .split(',')
       .map((tag) => tag.trim().toLowerCase())
-      .filter((tag) => tag.length > 0);
+      .filter((tag) => tag.length > 0)
+      .slice(0, 2); // Limit to 2 tags
+
+    if (inputTags.split(',').filter((t) => t.trim()).length > 2) {
+      showToast('Maximum 2 tags allowed', 'warning');
+    }
 
     try {
       setSubmitting(true);
@@ -383,12 +395,57 @@ export default function LinkSharingApp() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       <div className="max-w-2xl mx-auto px-3 py-4 pb-20">
         {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-xl font-semibold text-gray-900 mb-0.5">Links</h1>
+        <div className="mb-4 flex items-center gap-2">
+          <h1 className="text-xl font-semibold text-gray-900">Links</h1>
+          <span className="text-gray-300">·</span>
           <p className="text-xs text-gray-600">Share and discover links</p>
+        </div>
+
+        {/* Current User Info - Frappé UI Inspired Black & White */}
+        <div className="mb-4 bg-white border border-gray-200 rounded-lg p-3.5 hover:border-gray-300 transition-colors">
+          <div className="flex items-center gap-3">
+            {/* Avatar */}
+            <div className="relative flex-shrink-0">
+              <div className="w-11 h-11 bg-gray-900 rounded-md flex items-center justify-center">
+                <span className="text-white font-medium text-base tracking-tight">
+                  {telegramUser.username.charAt(0).toUpperCase()}
+                </span>
+              </div>
+            </div>
+
+            {/* User Details */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <h3 className="text-sm font-medium text-gray-900 tracking-tight truncate">
+                  {telegramUser.username}
+                </h3>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-gray-500 font-mono tracking-tight">
+                  {telegramUser.id}
+                </span>
+                <span className="text-gray-300">·</span>
+                <span className="text-xs text-gray-500">
+                  {links.filter((l) => l.userId === telegramUser.id).length}{' '}
+                  {links.filter((l) => l.userId === telegramUser.id).length ===
+                  1
+                    ? 'post'
+                    : 'posts'}
+                </span>
+              </div>
+            </div>
+
+            {/* Status Indicator */}
+            <div className="flex items-center gap-1.5 px-2 py-1 bg-gray-50 rounded-md border border-gray-200">
+              <div className="w-1.5 h-1.5 bg-gray-900 rounded-full"></div>
+              <span className="text-xs text-gray-700 font-medium tracking-tight">
+                Active
+              </span>
+            </div>
+          </div>
         </div>
 
         {/* Error Message */}
@@ -424,15 +481,38 @@ export default function LinkSharingApp() {
                   type="text"
                   value={inputTags}
                   onChange={(e) => setInputTags(e.target.value)}
-                  placeholder="Add tags (comma separated)..."
+                  placeholder="Add up to 2 tags (comma separated)..."
                   className="flex-1 px-0 py-0 text-xs text-gray-900 placeholder-gray-400 border-0 focus:outline-none focus:ring-0"
                   disabled={submitting}
                 />
               </div>
               <div className="flex justify-between items-center gap-2">
-                <span className="text-[10px] text-gray-400 leading-tight">
-                  Ctrl+Enter
-                </span>
+                <div className="flex items-center gap-2 text-[10px] text-gray-400">
+                  <span className="leading-tight">Ctrl+Enter</span>
+                  <span>·</span>
+                  <span
+                    className={`leading-tight ${
+                      inputText.trim().split(/\s+/).length > 250
+                        ? 'text-red-500 font-medium'
+                        : ''
+                    }`}
+                  >
+                    {inputText.trim()
+                      ? inputText.trim().split(/\s+/).length
+                      : 0}
+                    /250 words
+                  </span>
+                  <span>·</span>
+                  <span
+                    className={`leading-tight ${
+                      inputTags.split(',').filter((t) => t.trim()).length > 2
+                        ? 'text-red-500 font-medium'
+                        : ''
+                    }`}
+                  >
+                    {inputTags.split(',').filter((t) => t.trim()).length}/2 tags
+                  </span>
+                </div>
                 <button
                   onClick={handleSubmit}
                   disabled={submitting || !inputText.trim()}
