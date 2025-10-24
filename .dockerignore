@@ -1,0 +1,59 @@
+# Docker ignore file - excludes files from Docker build context
+
+# Node modules
+node_modules/
+npm-debug.log*
+
+# Build outputs
+dist/
+build/
+.next/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Dependencies
+vendor/
+
+# Backend binary
+backend/petamini-server
+backend/server
+
+# Test files
+*.test
+coverage/
+
+# Documentation
+*.md
+docs/
+
+# Deployment scripts
+deploy*.sh
+deploy*.ps1
+
+# AWS/Cloud configs
+.aws/
+.ebextensions/
+ecs-task-definition.json
+template.yaml
