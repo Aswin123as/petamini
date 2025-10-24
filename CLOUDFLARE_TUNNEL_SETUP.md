@@ -1,6 +1,7 @@
 # Cloudflare Tunnel Setup Guide
 
 ## What You'll Get
+
 - Free HTTPS URL (e.g., `https://random-words.trycloudflare.com`)
 - Automatic SSL certificate
 - No domain name required
@@ -9,11 +10,13 @@
 ## Quick Setup (5 minutes)
 
 ### Step 1: SSH into your EC2 instance
+
 ```bash
 ssh -i your-key.pem ec2-user@3.26.150.79
 ```
 
 ### Step 2: Download and install cloudflared
+
 ```bash
 # Download cloudflared
 wget https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64
@@ -27,13 +30,16 @@ cloudflared --version
 ```
 
 ### Step 3: Start the tunnel
+
 ```bash
 # Run tunnel pointing to your frontend on port 80
 cloudflared tunnel --url http://localhost:80
 ```
 
 ### Step 4: Get your HTTPS URL
+
 The output will show something like:
+
 ```
 Your quick tunnel has been created! Visit it at:
 https://random-words-example.trycloudflare.com
@@ -46,11 +52,13 @@ https://random-words-example.trycloudflare.com
 ## Making it Permanent (Run in Background)
 
 ### Option A: Using nohup (Simple)
+
 ```bash
 nohup cloudflared tunnel --url http://localhost:80 > /var/log/cloudflared.log 2>&1 &
 ```
 
 ### Option B: Using systemd service (Production)
+
 ```bash
 # Create service file
 sudo tee /etc/systemd/system/cloudflared.service > /dev/null <<EOF
@@ -94,11 +102,13 @@ sudo journalctl -u cloudflared -f
 ## Important Notes
 
 ### Temporary URL (Quick Tunnel)
+
 - **Free forever**
 - **URL changes** each time you restart cloudflared
 - **Good for**: Testing, development, demos
 
 ### Permanent URL (Named Tunnel)
+
 - Requires Cloudflare account (free)
 - **URL stays the same** after restarts
 - **Good for**: Production use
@@ -108,6 +118,7 @@ sudo journalctl -u cloudflared -f
 ## Troubleshooting
 
 ### If tunnel doesn't start:
+
 ```bash
 # Check if port 80 is in use
 sudo lsof -i :80
@@ -117,6 +128,7 @@ docker-compose restart frontend
 ```
 
 ### If you get connection errors:
+
 ```bash
 # Check Docker containers are running
 docker-compose ps
@@ -126,6 +138,7 @@ docker-compose logs frontend
 ```
 
 ### To stop the tunnel:
+
 ```bash
 # If running in foreground: Ctrl+C
 
@@ -148,4 +161,5 @@ sudo systemctl stop cloudflared
 ---
 
 ## Cost
+
 **$0 - Completely Free!**
