@@ -5,6 +5,7 @@
 ### Step 1: Get Your EC2 Instance Details
 
 From AWS Console (https://console.aws.amazon.com/ec2):
+
 1. Go to **EC2** → **Instances**
 2. Find your instance and note:
    - **Public IP Address**: (e.g., `3.123.45.67`)
@@ -13,11 +14,13 @@ From AWS Console (https://console.aws.amazon.com/ec2):
 ### Step 2: Ensure Security Group Allows Traffic
 
 Your instance needs these ports open:
+
 - ✅ Port 22 (SSH)
 - ✅ Port 80 (HTTP)
 - ✅ Port 8080 (Backend API)
 
 **To check/add:**
+
 1. Select your instance
 2. Click **Security** tab
 3. Click the security group link
@@ -38,6 +41,7 @@ Your instance needs these ports open:
 5. Click **Connect**
 
 Once connected, run:
+
 ```bash
 curl -o deploy.sh https://raw.githubusercontent.com/Aswin123as/petamini/main/deploy-to-existing-ec2.sh
 chmod +x deploy.sh
@@ -107,6 +111,7 @@ chmod +x deploy.sh
 ## 🎉 After Deployment
 
 Your app will be live at:
+
 - **Frontend**: `http://YOUR_INSTANCE_IP`
 - **Backend**: `http://YOUR_INSTANCE_IP:8080/api`
 - **Health**: `http://YOUR_INSTANCE_IP:8080/health`
@@ -173,6 +178,7 @@ echo "✅ App updated!"
 ## 🆘 Troubleshooting
 
 ### Backend not starting?
+
 ```bash
 # Check logs
 sudo journalctl -u petamini-backend -n 100
@@ -186,10 +192,12 @@ cd ~/petamini/backend
 ```
 
 ### Can't connect to MongoDB?
+
 - Add EC2 instance public IP to MongoDB Atlas IP whitelist
 - Or use `0.0.0.0/0` to allow all IPs
 
 ### Frontend shows 404?
+
 ```bash
 # Check Nginx config
 sudo nginx -t
