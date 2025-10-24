@@ -365,6 +365,24 @@ export default function LinkersPage() {
           </p>
         </div>
 
+        {/* Current User Info */}
+        {telegramUser && (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+              <span className="text-white font-bold text-lg">
+                {telegramUser.username.charAt(0).toUpperCase()}
+              </span>
+            </div>
+            <div className="flex-1">
+              <div className="text-sm font-semibold text-gray-800">
+                {telegramUser.username}
+              </div>
+              <div className="text-xs text-gray-500">ID: {telegramUser.id}</div>
+            </div>
+            <div className="text-xs text-gray-400 font-mono">Logged in</div>
+          </div>
+        )}
+
         {/* Create Post Form */}
         <CreatePostForm
           inputText={inputText}
