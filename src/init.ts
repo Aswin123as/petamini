@@ -12,7 +12,7 @@ import {
   // retrieveLaunchParams,
   emitEvent,
   miniApp,
-  isTMA,                // detect if running in Telegram Mini App
+  isTMA, // detect if running in Telegram Mini App
 } from '@telegram-apps/sdk-react';
 
 interface InitOptions {
@@ -27,7 +27,11 @@ export async function init(options: InitOptions): Promise<void> {
   initSDK();
 
   // 2. Add Eruda (for mobile/dev debugging)
-  if (options.eruda) {
+  // Guard with import.meta.env.DEV so the bundler can tree-shake this out of
+  // production builds. `options.eruda` is computed earlier but not statically
+  // analyzable during bundling; combining with import.meta.env.DEV ensures
+  // the dynamic import is removed from production output.
+  if (import.meta.env.DEV && options.eruda) {
     const { default: eruda } = await import('eruda');
     eruda.init();
     eruda.position({ x: window.innerWidth - 50, y: 0 });
@@ -36,7 +40,7 @@ export async function init(options: InitOptions): Promise<void> {
   // 3. Mock environment if needed
   //    We mock only when not in real Telegram, or when forced (e.g. macOS bugs)
   if (!isTMA() || options.mockForMacOS) {
-      const mockTheme: ThemeParams = {
+    const mockTheme: ThemeParams = {
       bg_color: '#ffffff',
       text_color: '#000000',
       hint_color: '#999999',
@@ -48,7 +52,7 @@ export async function init(options: InitOptions): Promise<void> {
     mockTelegramEnv({
       // You can provide launch param overrides if needed
       // For example, mock theme params or start params
-     launchParams: {
+      launchParams: {
         tgWebAppPlatform: options.mockForMacOS ? 'web' : 'unknown',
         tgWebAppThemeParams: mockTheme,
         tgWebAppVersion: '7.0',
@@ -65,7 +69,10 @@ export async function init(options: InitOptions): Promise<void> {
         // handle safe area if needed
         if (event[0] === 'web_app_request_safe_area') {
           return emitEvent('safe_area_changed', {
-            left: 0, top: 0, right: 0, bottom: 0,
+            left: 0,
+            top: 0,
+            right: 0,
+            bottom: 0,
           });
         }
 

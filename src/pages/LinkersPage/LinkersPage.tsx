@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   TrendingUp,
   Link2,
@@ -13,6 +13,8 @@ import {
   User,
 } from 'lucide-react';
 import { linkerService } from '@/services/linkerService.ts';
+import { linkerRepository } from '@/services/linkerRepository';
+import { useCachedLinkers } from '@/hooks/useCachedLinkers';
 import Toast from '@/components/Toast/Toast';
 import { EditPostModal } from '@/components/EditPostModal/EditPostModal';
 
@@ -73,20 +75,29 @@ const getTelegramUser = () => {
 };
 
 export default function LinkSharingApp() {
-  const [links, setLinks] = useState<Link[]>([]);
   const [inputText, setInputText] = useState('');
   const [inputTags, setInputTags] = useState('');
   const [sortBy, setSortBy] = useState<'recent' | 'popular' | 'my-posts'>(
     'recent'
   );
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<ToastState>({
     show: false,
     message: '',
     type: 'success',
   });
   const [editingLink, setEditingLink] = useState<Link | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  const telegramUser = getTelegramUser();
+
+  // Use cached linkers hook (only for recent/popular, not my-posts)
+  const sortParam = sortBy === 'my-posts' ? 'recent' : sortBy;
+  const {
+    linkers: cachedLinkers,
+    loading,
+    error: cacheError,
+    refresh: refreshCache,
+  } = useCachedLinkers(sortParam);
 
   const showToast = (
     message: string,
@@ -94,91 +105,18 @@ export default function LinkSharingApp() {
   ) => {
     setToast({ show: true, message, type });
   };
-  const [submitting, setSubmitting] = useState(false);
 
-  const telegramUser = getTelegramUser();
+  // Convert cached linkers to Link format with promoted status
+  const links: Link[] = cachedLinkers.map((linker) => ({
+    ...linker,
+    promoted: telegramUser
+      ? linker.promotedBy.includes(telegramUser.id)
+      : false,
+    preview: null,
+    previewLoading: linker.type === 'url',
+  }));
 
-  // Fetch linkers from backend
-  useEffect(() => {
-    loadLinkers();
-  }, [sortBy]);
-
-  const loadLinkers = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const sortParam = sortBy === 'my-posts' ? 'recent' : sortBy;
-      const data = await linkerService.getAllLinkers(sortParam);
-
-      // Handle null or undefined response
-      if (!data || !Array.isArray(data)) {
-        setLinks([]);
-        return;
-      }
-
-      // Convert backend data to frontend format
-      const convertedLinks: Link[] = data.map((linker) => ({
-        ...linker,
-        promoted: telegramUser
-          ? linker.promotedBy.includes(telegramUser.id)
-          : false,
-        preview: null,
-        previewLoading: linker.type === 'url',
-      }));
-
-      setLinks(convertedLinks);
-    } catch (err) {
-      console.error('Error loading linkers:', err);
-      setError('Failed to load posts. Please try again.');
-      setLinks([]); // Set empty array on error
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchLinkPreview = async (url: string, linkId: string) => {
-    try {
-      const preview = await linkerService.fetchLinkPreview(url);
-
-      if (preview) {
-        setLinks((prevLinks) =>
-          prevLinks.map((link) =>
-            link.id === linkId
-              ? {
-                  ...link,
-                  preview: preview,
-                  previewLoading: false,
-                }
-              : link
-          )
-        );
-      } else {
-        setLinks((prevLinks) =>
-          prevLinks.map((link) =>
-            link.id === linkId
-              ? { ...link, preview: null, previewLoading: false }
-              : link
-          )
-        );
-      }
-    } catch (error) {
-      setLinks((prevLinks) =>
-        prevLinks.map((link) =>
-          link.id === linkId
-            ? { ...link, preview: null, previewLoading: false }
-            : link
-        )
-      );
-    }
-  };
-
-  useEffect(() => {
-    links.forEach((link) => {
-      if (link.type === 'url' && link.previewLoading && !link.preview) {
-        fetchLinkPreview(link.content, link.id);
-      }
-    });
-  }, [links]);
+  const error = cacheError;
 
   const isUrl = (text: string) => {
     // Check if text starts with common URL protocols
@@ -253,15 +191,12 @@ export default function LinkSharingApp() {
         tags: tags,
       });
 
-      // Add to local state
-      const newLink: Link = {
-        ...newLinker,
-        promoted: false,
-        preview: null,
-        previewLoading: type === 'url',
-      };
+      // Update cache with new linker
+      linkerRepository.updateCacheAfterCreate(newLinker);
 
-      setLinks([newLink, ...links]);
+      // Refresh to show new post
+      await refreshCache();
+
       setInputText('');
       setInputTags('');
       showToast('Post created successfully!', 'success');
@@ -292,20 +227,11 @@ export default function LinkSharingApp() {
         telegramUser.id
       );
 
-      // Update local state
-      setLinks(
-        links.map((link) => {
-          if (link.id === id) {
-            return {
-              ...link,
-              promotions: updatedLinker.promotions,
-              promotedBy: updatedLinker.promotedBy,
-              promoted: updatedLinker.promotedBy.includes(telegramUser.id),
-            };
-          }
-          return link;
-        })
-      );
+      // Update cache after promotion
+      linkerRepository.updateCacheAfterPromote(id, updatedLinker);
+
+      // Refresh to show updated promotions
+      await refreshCache();
     } catch (err) {
       console.error('Error promoting linker:', err);
       showToast('Failed to promote post. Please try again.', 'error');
@@ -324,20 +250,13 @@ export default function LinkSharingApp() {
     if (!telegramUser) return;
 
     try {
-      const updated = await linkerService.updateLinker(
-        postId,
-        telegramUser.id,
-        content,
-        tags
-      );
+      await linkerService.updateLinker(postId, telegramUser.id, content, tags);
 
-      setLinks(
-        links.map((link) =>
-          link.id === postId
-            ? { ...link, content: updated.content, tags: updated.tags }
-            : link
-        )
-      );
+      // Invalidate cache to force fresh data on next load
+      linkerRepository.invalidateCache();
+
+      // Refresh to show updated post
+      await refreshCache();
 
       setEditingLink(null);
       showToast('Post updated successfully!', 'success');
@@ -356,7 +275,13 @@ export default function LinkSharingApp() {
 
     try {
       await linkerService.deleteLinker(id, telegramUser.id);
-      setLinks(links.filter((link) => link.id !== id));
+
+      // Update cache after deletion
+      linkerRepository.updateCacheAfterDelete(id);
+
+      // Refresh to remove deleted post
+      await refreshCache();
+
       showToast('Post deleted successfully!', 'success');
     } catch (err) {
       console.error('Error deleting post:', err);
