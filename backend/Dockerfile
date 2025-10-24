@@ -1,5 +1,5 @@
 # Build stage
-FROM golang:1.21-alpine AS builder
+FROM golang:1.23-alpine AS builder
 
 WORKDIR /app
 
@@ -11,7 +11,7 @@ RUN go mod download
 COPY . .
 
 # Build the application
-RUN CGO_ENABLED=0 GOOS=linux go build -o petamini-backend .
+RUN CGO_ENABLED=0 GOOS=linux go build -o petamini-server main.go
 
 # Runtime stage
 FROM alpine:latest
@@ -21,10 +21,10 @@ RUN apk --no-cache add ca-certificates
 WORKDIR /root/
 
 # Copy the binary from builder
-COPY --from=builder /app/petamini-backend .
+COPY --from=builder /app/petamini-server .
 
 # Expose port
 EXPOSE 8080
 
 # Run the application
-CMD ["./petamini-backend"]
+CMD ["./petamini-server"]
