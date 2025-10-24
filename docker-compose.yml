@@ -8,7 +8,7 @@ services:
       dockerfile: Dockerfile
     container_name: petamini-backend
     ports:
-      - "8080:8080"
+      - '8080:8080'
     environment:
       - MONGODB_URI=${MONGODB_URI:-mongodb+srv://aswinmail12_db_user:N5ijckeY6tF9PAI9@cluster-petamini.brepo4.mongodb.net/?retryWrites=true&w=majority&appName=Cluster-petamini&tlsInsecure=true}
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-7361371574:AAFGyrKZkHVB-GSNgmSHrIOD34fwwczU7oo}
@@ -18,7 +18,15 @@ services:
     networks:
       - petamini-network
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      test:
+        [
+          'CMD',
+          'wget',
+          '--no-verbose',
+          '--tries=1',
+          '--spider',
+          'http://localhost:8080/health',
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -31,14 +39,22 @@ services:
       dockerfile: Dockerfile
     container_name: petamini-frontend
     ports:
-      - "80:80"
+      - '80:80'
     depends_on:
       - backend
     restart: unless-stopped
     networks:
       - petamini-network
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80"]
+      test:
+        [
+          'CMD',
+          'wget',
+          '--no-verbose',
+          '--tries=1',
+          '--spider',
+          'http://localhost:80',
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
