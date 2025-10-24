@@ -3,6 +3,7 @@
 This guide will help you set up a permanent Cloudflare tunnel that won't expire or change URLs.
 
 ## Prerequisites
+
 - Free Cloudflare account (sign up at https://dash.cloudflare.com/sign-up)
 - SSH access to your EC2 instance
 - cloudflared already installed on EC2
@@ -12,6 +13,7 @@ This guide will help you set up a permanent Cloudflare tunnel that won't expire 
 ### On Your Local Machine:
 
 1. **Sign up for Cloudflare** (if you don't have an account):
+
    - Go to https://dash.cloudflare.com/sign-up
    - Create a free account
 
@@ -33,11 +35,13 @@ cloudflared tunnel create petamini
 ```
 
 This will:
+
 - Create a tunnel with a permanent UUID
 - Save credentials to `~/.cloudflared/<tunnel-id>.json`
 - Output your tunnel ID (save this!)
 
 **Example output:**
+
 ```
 Tunnel credentials written to /home/ubuntu/.cloudflared/abc123-def456-ghi789.json
 Created tunnel petamini with id abc123-def456-ghi789
@@ -154,16 +158,19 @@ VITE_API_BASE_URL=https://petamini.trycloudflare.com/api
 ## Troubleshooting
 
 ### Check tunnel logs:
+
 ```bash
 sudo journalctl -u cloudflared -f
 ```
 
 ### Restart tunnel:
+
 ```bash
 sudo systemctl restart cloudflared
 ```
 
 ### Check tunnel status:
+
 ```bash
 cloudflared tunnel list
 sudo systemctl status cloudflared
@@ -212,5 +219,6 @@ cloudflared tunnel delete petamini
 ---
 
 **Your permanent tunnel URL will be:**
+
 - Without domain: `https://petamini.trycloudflare.com`
 - With domain: `https://app.yourdomain.com`
