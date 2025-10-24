@@ -125,7 +125,18 @@ func main() {
 		}
 		log.Printf("✅ Webhook set to: %s", info.URL)
 	} else {
-		// For development, use long polling
+		// For development, delete webhook first then use long polling
+		log.Println("🔧 Development mode: Removing webhook...")
+		deleteWebhook := tgbotapi.DeleteWebhookConfig{
+			DropPendingUpdates: false,
+		}
+		_, err := bot.Request(deleteWebhook)
+		if err != nil {
+			log.Printf("⚠️  Warning: Failed to delete webhook: %v", err)
+		} else {
+			log.Println("✅ Webhook removed successfully")
+		}
+		
 		go startPolling(bot, paymentService, botCommandHandler)
 	}
 

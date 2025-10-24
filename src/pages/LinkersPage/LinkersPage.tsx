@@ -110,6 +110,12 @@ export default function LinkSharingApp() {
       const sortParam = sortBy === 'my-posts' ? 'recent' : sortBy;
       const data = await linkerService.getAllLinkers(sortParam);
 
+      // Handle null or undefined response
+      if (!data || !Array.isArray(data)) {
+        setLinks([]);
+        return;
+      }
+
       // Convert backend data to frontend format
       const convertedLinks: Link[] = data.map((linker) => ({
         ...linker,
@@ -124,6 +130,7 @@ export default function LinkSharingApp() {
     } catch (err) {
       console.error('Error loading linkers:', err);
       setError('Failed to load posts. Please try again.');
+      setLinks([]); // Set empty array on error
     } finally {
       setLoading(false);
     }
@@ -195,7 +202,9 @@ export default function LinkSharingApp() {
     }
 
     // Check word count (250 word limit)
-    const wordCount = trimmedText.split(/\s+/).length;
+    const wordCount = trimmedText
+      ? trimmedText.split(/\s+/).filter((word) => word.length > 0).length
+      : 0;
     if (wordCount > 250) {
       showToast('Post must be 250 words or less', 'error');
       return;
@@ -492,13 +501,20 @@ export default function LinkSharingApp() {
                   <span>·</span>
                   <span
                     className={`leading-tight ${
-                      inputText.trim().split(/\s+/).length > 250
+                      inputText.trim() &&
+                      inputText
+                        .trim()
+                        .split(/\s+/)
+                        .filter((word) => word.length > 0).length > 250
                         ? 'text-red-500 font-medium'
                         : ''
                     }`}
                   >
                     {inputText.trim()
-                      ? inputText.trim().split(/\s+/).length
+                      ? inputText
+                          .trim()
+                          .split(/\s+/)
+                          .filter((word) => word.length > 0).length
                       : 0}
                     /250 words
                   </span>
