@@ -1,0 +1,47 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: PetaMini Backend Serverless API
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 512
+    Environment:
+      Variables:
+        PORT: 8080
+
+Resources:
+  PetaMiniBackendFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: bootstrap
+      Runtime: provided.al2
+      Architectures:
+        - x86_64
+      Events:
+        CatchAll:
+          Type: Api
+          Properties:
+            Path: /{proxy+}
+            Method: ANY
+      Environment:
+        Variables:
+          MONGODB_URI: !Sub '{{resolve:secretsmanager:petamini/mongodb-uri}}'
+          TELEGRAM_BOT_TOKEN: !Sub '{{resolve:secretsmanager:petamini/telegram-token}}'
+      Policies:
+        - AWSSecretsManagerGetSecretValuePolicy:
+            SecretArn: !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:petamini/*'
+
+Outputs:
+  PetaMiniBackendApi:
+    Description: 'API Gateway endpoint URL for Prod stage'
+    Value: !Sub 'https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/'
+
+  PetaMiniBackendFunction:
+    Description: 'Lambda Function ARN'
+    Value: !GetAtt PetaMiniBackendFunction.Arn
+
+  PetaMiniBackendFunctionIamRole:
+    Description: 'Implicit IAM Role created for function'
+    Value: !GetAtt PetaMiniBackendFunctionRole.Arn

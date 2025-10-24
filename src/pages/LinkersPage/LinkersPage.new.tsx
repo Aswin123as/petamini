@@ -5,6 +5,7 @@ import Toast from '@/components/Toast/Toast';
 import { CreatePostForm } from '@/components/CreatePostForm/CreatePostForm';
 import { SortTabs } from '@/components/SortTabs/SortTabs';
 import { LinkCard } from '@/components/LinkCard/LinkCard';
+import { EditPostModal } from '@/components/EditPostModal/EditPostModal';
 
 // Types
 interface LinkPreview {
@@ -71,6 +72,7 @@ export default function LinkersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [editingLink, setEditingLink] = useState<Link | null>(null);
   const [toast, setToast] = useState<ToastState>({
     show: false,
     message: '',
@@ -262,6 +264,61 @@ export default function LinkersPage() {
     }
   };
 
+  const handleEdit = (id: string) => {
+    const linkToEdit = links.find((link) => link.id === id);
+    if (linkToEdit) {
+      setEditingLink(linkToEdit);
+    }
+  };
+
+  const handleSaveEdit = async (
+    postId: string,
+    content: string,
+    tags: string[]
+  ) => {
+    if (!telegramUser) return;
+
+    try {
+      const updated = await linkerService.updateLinker(
+        postId,
+        telegramUser.id,
+        content,
+        tags
+      );
+
+      setLinks(
+        links.map((link) =>
+          link.id === postId
+            ? { ...link, content: updated.content, tags: updated.tags }
+            : link
+        )
+      );
+
+      setEditingLink(null);
+      showToast('Post updated successfully!', 'success');
+    } catch (err) {
+      console.error('Error updating post:', err);
+      showToast('Failed to update post', 'error');
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!telegramUser) return;
+
+    if (!window.confirm('Are you sure you want to delete this post?')) {
+      return;
+    }
+
+    try {
+      await linkerService.deleteLinker(id, telegramUser.id);
+      setLinks(links.filter((link) => link.id !== id));
+      showToast('Post deleted successfully!', 'success');
+    } catch (err) {
+      console.error('Error deleting post:', err);
+      showToast('Failed to delete post', 'error');
+    }
+  };
+
   const getTimeAgo = (timestamp: string) => {
     const now = new Date();
     const past = new Date(timestamp);
@@ -344,7 +401,10 @@ export default function LinkersPage() {
                 key={link.id}
                 {...link}
                 onPromote={handlePromote}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
                 getTimeAgo={getTimeAgo}
+                isOwner={telegramUser ? link.userId === telegramUser.id : false}
               />
             ))}
           </div>
@@ -357,6 +417,17 @@ export default function LinkersPage() {
           </div>
         )}
       </div>
+
+      {/* Edit Modal */}
+      {editingLink && (
+        <EditPostModal
+          postId={editingLink.id}
+          initialContent={editingLink.content}
+          initialTags={editingLink.tags}
+          onClose={() => setEditingLink(null)}
+          onSave={handleSaveEdit}
+        />
+      )}
 
       {/* Toast Notifications */}
       {toast.show && (
