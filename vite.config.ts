@@ -5,7 +5,7 @@ import mkcert from 'vite-plugin-mkcert';
 import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
-  base: '/petamini/',
+  base: '/',
   css: {
     preprocessorOptions: {
       scss: {
@@ -35,4 +35,3 @@ export default defineConfig({
     host: true,
   },
 });
-
