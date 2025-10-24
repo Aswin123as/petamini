@@ -279,6 +279,13 @@ export default function LinkSharingApp() {
       return;
     }
 
+    // Check if user already promoted this post
+    const link = links.find((l) => l.id === id);
+    if (link && link.promoted) {
+      // Already promoted - do nothing (one user one like)
+      return;
+    }
+
     try {
       const updatedLinker = await linkerService.promoteLinker(
         id,
@@ -606,8 +613,11 @@ export default function LinkSharingApp() {
                 <div className="flex items-start gap-2">
                   <button
                     onClick={() => handlePromote(link.id)}
+                    disabled={link.promoted}
                     className={`flex flex-col items-center gap-0.5 min-w-[32px] group ${
-                      link.promoted ? 'opacity-100' : 'opacity-70'
+                      link.promoted
+                        ? 'opacity-100 cursor-default'
+                        : 'opacity-70 cursor-pointer'
                     }`}
                   >
                     <div
