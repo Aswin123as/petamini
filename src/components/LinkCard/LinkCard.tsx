@@ -86,11 +86,13 @@ export function LinkCard({
             {/* Promote Button */}
             <button
               onClick={() => onPromote(id)}
+              disabled={promoted}
               className={`flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-medium transition-all ${
                 promoted
-                  ? 'bg-orange-100 text-orange-700 active:bg-orange-200'
-                  : 'bg-gray-100 text-gray-700 active:bg-gray-200'
+                  ? 'bg-orange-100 text-orange-700 cursor-not-allowed opacity-80'
+                  : 'bg-gray-100 text-gray-700 active:bg-gray-200 hover:bg-gray-200'
               }`}
+              title={promoted ? 'Already promoted' : 'Promote this post'}
             >
               <Flame
                 className={`w-3 h-3 ${promoted ? 'fill-orange-500' : ''}`}

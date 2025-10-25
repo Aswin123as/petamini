@@ -712,7 +712,7 @@ export default function LinkSharingApp() {
             {getSortedLinks.map((link) => (
               <div
                 key={link.id}
-                className="bg-white border border-gray-200 rounded-lg p-3 active:bg-gray-50 transition-colors"
+                className="bg-white border border-gray-200 rounded-lg p-3 transition-colors"
               >
                 <div className="flex items-start gap-2">
                   <button
@@ -780,7 +780,7 @@ export default function LinkSharingApp() {
                                 )}
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-start gap-1.5 mb-0.5">
-                                    {link.preview.logo && (
+                                    {/* {link.preview.logo && (
                                       <img
                                         src={link.preview.logo}
                                         alt="Logo"
@@ -791,7 +791,7 @@ export default function LinkSharingApp() {
                                           ).style.display = 'none';
                                         }}
                                       />
-                                    )}
+                                    )} */}
                                     <div className="flex-1 min-w-0">
                                       <div className="text-[11px] font-medium text-gray-900 group-active:text-blue-600 transition-colors line-clamp-1">
                                         {link.preview.title ||
