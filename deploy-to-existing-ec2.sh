@@ -71,7 +71,7 @@ cd backend
 # Create .env file
 cat > .env << 'EOF'
 MONGODB_URI=mongodb+srv://aswinmail12_db_user:N5ijckeY6tF9PAI9@cluster-petamini.brepo4.mongodb.net/?retryWrites=true&w=majority&appName=Cluster-petamini&tlsInsecure=true
-TELEGRAM_BOT_TOKEN=7361371574:AAFGyrKZkHVB-GSNgmSHrIOD34fwwczU7oo
+TELEGRAM_BOT_TOKEN=__YOUR_TELEGRAM_BOT_TOKEN__
 PORT=8080
 ENVIRONMENT=production
 EOF
