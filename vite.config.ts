@@ -33,5 +33,7 @@ export default defineConfig({
   server: {
     // Exposes your dev server and makes it accessible for the devices in the same network.
     host: true,
+    port: 5173,
+    strictPort: true, // Fail if port is already in use instead of trying next available port
   },
 });
