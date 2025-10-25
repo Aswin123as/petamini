@@ -30,15 +30,15 @@ interface Link {
   userId: number;
   username: string;
   content: string;
-  type: 'url' | 'text';
+  links: string[];
   tags: string[];
   promotions: number;
   promotedBy: number[];
   timestamp: string;
   createdAt: string;
   promoted: boolean;
-  preview: LinkPreview | null;
-  previewLoading: boolean;
+  preview?: LinkPreview | null;
+  previewLoading?: boolean;
 }
 
 interface ToastState {
@@ -93,12 +93,13 @@ export default function LinkSharingApp() {
 
   // Use cached linkers hook (only for recent/popular, not my-posts)
   const sortParam = sortBy === 'my-posts' ? 'recent' : sortBy;
+  // Temporarily bypass cache to always fetch fresh data
   const {
     linkers: cachedLinkers,
     loading,
     error: cacheError,
     refresh: refreshCache,
-  } = useCachedLinkers(sortParam);
+  } = useCachedLinkers(sortParam, { bypassCache: true });
 
   const showToast = (
     message: string,
@@ -151,26 +152,30 @@ export default function LinkSharingApp() {
   useEffect(() => {
     let isMounted = true;
 
-    const linksWithPreview = cachedLinkers.map((linker) => ({
-      ...linker,
-      promoted: telegramUser
-        ? linker.promotedBy.includes(telegramUser.id)
-        : false,
-      preview: null,
-      previewLoading:
-        linker.type === 'url' && !fetchedPreviewsRef.current.has(linker.id),
-    }));
-    setLinks(linksWithPreview);
+    const linksWithPromoted = cachedLinkers.map((linker) => {
+      const ensuredLinks = Array.isArray((linker as any).links)
+        ? (linker as any).links
+        : extractUrls(linker.content);
+      return {
+        ...linker,
+        links: ensuredLinks,
+        promoted: telegramUser
+          ? linker.promotedBy.includes(telegramUser.id)
+          : false,
+        preview: null,
+        previewLoading:
+          ensuredLinks.length > 0 && !fetchedPreviewsRef.current.has(linker.id),
+      } as Link;
+    });
+    setLinks(linksWithPromoted);
 
-    // Only fetch previews for new links that haven't been fetched yet
-    const newUrlLinks = linksWithPreview.filter(
-      (link) => link.type === 'url' && !fetchedPreviewsRef.current.has(link.id)
-    );
-
-    // Fetch previews only if there are new links
-    if (newUrlLinks.length > 0 && isMounted) {
-      newUrlLinks.forEach((link) => {
-        fetchLinkPreview(link.content, link.id);
+    // Fetch previews for posts that have links and haven't been fetched yet
+    if (isMounted) {
+      linksWithPromoted.forEach((link) => {
+        const first = getFirstLink(link);
+        if (first && !fetchedPreviewsRef.current.has(link.id)) {
+          fetchLinkPreview(first, link.id);
+        }
       });
     }
 
@@ -192,30 +197,6 @@ export default function LinkSharingApp() {
   const tagCount = useMemo(() => {
     return inputTags.split(',').filter((t) => t.trim()).length;
   }, [inputTags]);
-
-  const isUrl = (text: string) => {
-    // Check if text starts with common URL protocols
-    if (text.startsWith('http://') || text.startsWith('https://')) {
-      return true;
-    }
-
-    // Check for common domains and TLDs
-    const urlPattern =
-      /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.\-\+\?=&%#]*)*\/?$/i;
-
-    return (
-      urlPattern.test(text) ||
-      text.includes('.com') ||
-      text.includes('.org') ||
-      text.includes('.net') ||
-      text.includes('.io') ||
-      text.includes('.dev') ||
-      text.includes('.co') ||
-      text.includes('t.me/') || // Telegram links
-      text.includes('telegram.me/') // Telegram alternative domain
-    );
-  };
-
   const handleSubmit = async () => {
     const trimmedText = inputText.trim();
 
@@ -224,25 +205,9 @@ export default function LinkSharingApp() {
     }
 
     // Check word count (250 word limit)
-    const wordCount = trimmedText
-      ? trimmedText.split(/\s+/).filter((word) => word.length > 0).length
-      : 0;
     if (wordCount > 250) {
       showToast('Post must be 250 words or less', 'error');
       return;
-    }
-
-    let content = trimmedText;
-    let type: 'url' | 'text' = 'text';
-
-    if (isUrl(trimmedText)) {
-      type = 'url';
-      if (
-        !trimmedText.startsWith('http://') &&
-        !trimmedText.startsWith('https://')
-      ) {
-        content = 'https://' + trimmedText;
-      }
     }
 
     // Process tags (limit to 2 tags)
@@ -261,8 +226,7 @@ export default function LinkSharingApp() {
       const newLinker = await linkerService.createLinker({
         userId: telegramUser.id,
         username: telegramUser.username,
-        content: content,
-        type: type,
+        content: trimmedText,
         tags: tags,
       });
 
@@ -277,7 +241,12 @@ export default function LinkSharingApp() {
       showToast('Post created successfully!', 'success');
     } catch (err) {
       console.error('Error creating linker:', err);
-      showToast('Failed to create post. Please try again.', 'error');
+      const errorMessage = (err as any)?.message || 'Failed to create post';
+      if (errorMessage.includes('duplicate')) {
+        showToast('This link has already been posted!', 'warning');
+      } else {
+        showToast('Failed to create post. Please try again.', 'error');
+      }
     } finally {
       setSubmitting(false);
     }
@@ -401,6 +370,91 @@ export default function LinkSharingApp() {
     } catch {
       return url;
     }
+  };
+
+  // Extract URLs from plain text content (simple, robust regex)
+  const extractUrls = (text: string): string[] => {
+    if (!text) return [];
+    const regex = /(https?:\/\/[^\s<>"'`]+)|(www\.[^\s<>"'`]+)/gi;
+    const matches = text.match(regex) || [];
+    // Normalize: ensure protocol present
+    const normalized = matches.map((m) =>
+      m.startsWith('http') ? m : `https://${m}`
+    );
+    // Deduplicate while preserving order
+    const seen = new Set<string>();
+    const result: string[] = [];
+    for (const u of normalized) {
+      if (!seen.has(u)) {
+        seen.add(u);
+        result.push(u);
+      }
+    }
+    return result;
+  };
+
+  const getFirstLink = (link: Link): string | undefined => {
+    if (link.links && link.links.length > 0) return link.links[0];
+    const derived = extractUrls(link.content);
+    return derived[0];
+  };
+
+  // Render content with clickable links
+  const renderContentWithLinks = (content: string, omitLinks?: string[]) => {
+    if (!content) return null;
+    const regex = /(https?:\/\/[^\s<>"'`]+|www\.[^\s<>"'`]+)/gi;
+    const parts: (string | JSX.Element)[] = [];
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
+    const text = content;
+
+    const shouldOmit = (href: string) =>
+      Array.isArray(omitLinks) && omitLinks.includes(href);
+
+    while ((match = regex.exec(text)) !== null) {
+      const raw = match[0];
+      const href = raw.startsWith('http') ? raw : `https://${raw}`;
+      const start = match.index;
+      const end = start + raw.length;
+
+      // Push preceding text
+      if (start > lastIndex) {
+        parts.push(text.slice(lastIndex, start));
+      }
+
+      if (!shouldOmit(href)) {
+        parts.push(
+          <a
+            key={`link-${start}`}
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:underline"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {raw}
+          </a>
+        );
+      }
+
+      lastIndex = end;
+    }
+
+    // Remaining text
+    if (lastIndex < text.length) {
+      parts.push(text.slice(lastIndex));
+    }
+
+    // If everything was omitted and no residual text, return null
+    const onlyWhitespace =
+      parts.length === 0 ||
+      parts.every((p) => {
+        if (typeof p === 'string') return p.trim().length === 0;
+        return false;
+      });
+    if (onlyWhitespace) return null;
+
+    return <>{parts}</>;
   };
 
   if (!telegramUser) {
@@ -630,8 +684,10 @@ export default function LinkSharingApp() {
                   </button>
 
                   <div className="flex-1 min-w-0">
-                    {link.type === 'url' ? (
-                      <div>
+                    {/* If post has links, show a compact preview for the first link, and render content with clickable links */}
+                    {getFirstLink(link) ? (
+                      <div className="space-y-2">
+                        {/* Link preview card */}
                         {link.previewLoading ? (
                           <div className="animate-pulse">
                             <div className="h-3 bg-gray-200 rounded w-3/4 mb-1.5"></div>
@@ -639,7 +695,7 @@ export default function LinkSharingApp() {
                           </div>
                         ) : link.preview ? (
                           <a
-                            href={link.content}
+                            href={getFirstLink(link) as string}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="block group"
@@ -653,7 +709,7 @@ export default function LinkSharingApp() {
                                     className="w-12 h-12 object-cover rounded flex-shrink-0"
                                     onError={(e) => {
                                       (
-                                        e.target as HTMLImageElement
+                                        e.currentTarget as HTMLImageElement
                                       ).style.display = 'none';
                                     }}
                                   />
@@ -667,7 +723,7 @@ export default function LinkSharingApp() {
                                         className="w-3 h-3 rounded mt-0.5 flex-shrink-0"
                                         onError={(e) => {
                                           (
-                                            e.target as HTMLImageElement
+                                            e.currentTarget as HTMLImageElement
                                           ).style.display = 'none';
                                         }}
                                       />
@@ -675,7 +731,7 @@ export default function LinkSharingApp() {
                                     <div className="flex-1 min-w-0">
                                       <div className="text-[11px] font-medium text-gray-900 group-active:text-blue-600 transition-colors line-clamp-1">
                                         {link.preview.title ||
-                                          getDomain(link.content)}
+                                          getDomain(link.links[0])}
                                       </div>
                                       {link.preview.description && (
                                         <p className="text-[10px] text-gray-500 mt-0.5 line-clamp-1">
@@ -688,7 +744,7 @@ export default function LinkSharingApp() {
                                           className="text-gray-400"
                                         />
                                         <span className="text-[10px] text-gray-500 truncate">
-                                          {getDomain(link.content)}
+                                          {getDomain(link.links[0])}
                                         </span>
                                       </div>
                                     </div>
@@ -699,7 +755,7 @@ export default function LinkSharingApp() {
                           </a>
                         ) : (
                           <a
-                            href={link.content}
+                            href={link.links[0]}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="block group"
@@ -711,21 +767,35 @@ export default function LinkSharingApp() {
                                   className="text-gray-400 flex-shrink-0"
                                 />
                                 <span className="text-[10px] text-gray-500 truncate">
-                                  {getDomain(link.content)}
+                                  {getDomain(getFirstLink(link) as string)}
                                 </span>
                               </div>
                               <div className="text-xs text-gray-900 group-active:text-blue-600 transition-colors break-all">
-                                {link.content}
+                                {getFirstLink(link)}
                               </div>
                             </div>
                           </a>
                         )}
+
+                        {/* Full content with clickable links, omit first link to avoid duplication */}
+                        {(() => {
+                          const first = getFirstLink(link) as
+                            | string
+                            | undefined;
+                          const contentNode = renderContentWithLinks(
+                            link.content,
+                            first ? [first] : undefined
+                          );
+                          return contentNode ? (
+                            <div className="text-xs text-gray-900 break-words leading-relaxed">
+                              {contentNode}
+                            </div>
+                          ) : null;
+                        })()}
                       </div>
                     ) : (
-                      <div>
-                        <div className="text-xs text-gray-900 break-words leading-relaxed">
-                          {link.content}
-                        </div>
+                      <div className="text-xs text-gray-900 break-words leading-relaxed">
+                        {link.content}
                       </div>
                     )}
 

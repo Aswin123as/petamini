@@ -96,6 +96,7 @@ func main() {
 		linkers := api.Group("/linkers")
 		{
 			linkers.GET("", linkerHandler.GetAllLinkers)
+			linkers.GET("/check-duplicate", linkerHandler.CheckDuplicateLink)
 			linkers.POST("", linkerHandler.CreateLinker)
 			linkers.POST("/:id/promote", linkerHandler.PromoteLinker)
 			linkers.DELETE("/:id", linkerHandler.DeleteLinker)

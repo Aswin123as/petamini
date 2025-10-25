@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"net/http"
+	"regexp"
 	"strconv"
 	"time"
 
@@ -62,6 +63,64 @@ func (h *LinkerHandler) GetAllLinkers(c *gin.Context) {
 	c.JSON(http.StatusOK, linkers)
 }
 
+// extractURLs extracts all URLs from a text string
+func extractURLs(text string) []string {
+	// Regular expression to match URLs
+	urlPattern := `https?://[^\s<>"{}|\\^\[\]` + "`" + `]+`
+	re := regexp.MustCompile(urlPattern)
+	matches := re.FindAllString(text, -1)
+	
+	// Remove duplicates
+	seen := make(map[string]bool)
+	var urls []string
+	for _, url := range matches {
+		if !seen[url] {
+			seen[url] = true
+			urls = append(urls, url)
+		}
+	}
+	
+	return urls
+}
+
+// CheckDuplicateLink checks if a URL has already been posted
+func (h *LinkerHandler) CheckDuplicateLink(c *gin.Context) {
+	url := c.Query("url")
+	if url == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "URL parameter is required"})
+		return
+	}
+
+	collection := h.db.Collection("linkers")
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// Check if a linker with this URL exists and type is 'url'
+	var existingLinker models.Linker
+	err := collection.FindOne(ctx, bson.M{
+		"content": url,
+		"type":    "url",
+	}).Decode(&existingLinker)
+
+	if err == mongo.ErrNoDocuments {
+		// URL doesn't exist - safe to post
+		c.JSON(http.StatusOK, gin.H{"exists": false})
+		return
+	}
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to check duplicate"})
+		return
+	}
+
+	// URL already exists
+	c.JSON(http.StatusOK, gin.H{
+		"exists":    true,
+		"linker":    existingLinker,
+		"message":   "This link has already been posted",
+	})
+}
+
 // CreateLinker creates a new linker post
 func (h *LinkerHandler) CreateLinker(c *gin.Context) {
 	var linker models.Linker
@@ -70,21 +129,46 @@ func (h *LinkerHandler) CreateLinker(c *gin.Context) {
 		return
 	}
 
-	// Set default values
-	linker.ID = primitive.NewObjectID()
-	linker.Promotions = 0
-	linker.Timestamp = time.Now()
-	linker.PromotedBy = []int64{}
-
 	// Validate user ID
 	if linker.UserID <= 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
 		return
 	}
 
+	// Extract URLs from content
+	linker.Links = extractURLs(linker.Content)
+
 	collection := h.db.Collection("linkers")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
+
+	// Check for duplicate links if any URLs found
+	if len(linker.Links) > 0 {
+		for _, link := range linker.Links {
+			var existingLinker models.Linker
+			err := collection.FindOne(ctx, bson.M{
+				"links": link,
+			}).Decode(&existingLinker)
+
+			if err == nil {
+				// Link already exists
+				c.JSON(http.StatusConflict, gin.H{
+					"error":   "duplicate_link",
+					"message": "This link has already been posted",
+					"link":    link,
+					"existingPost": existingLinker,
+				})
+				return
+			}
+		}
+	}
+
+	// Set default values
+	linker.ID = primitive.NewObjectID()
+	linker.Promotions = 0
+	linker.Timestamp = time.Now()
+	linker.CreatedAt = time.Now()
+	linker.PromotedBy = []int64{}
 
 	_, err := collection.InsertOne(ctx, linker)
 	if err != nil {

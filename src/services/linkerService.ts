@@ -16,7 +16,7 @@ export interface Linker {
   userId: number;
   username: string;
   content: string;
-  type: 'url' | 'text';
+  links: string[];
   tags: string[];
   promotions: number;
   promotedBy: number[];
@@ -30,7 +30,6 @@ export interface CreateLinkerRequest {
   userId: number;
   username: string;
   content: string;
-  type: 'url' | 'text';
   tags: string[];
 }
 
@@ -92,6 +91,28 @@ class LinkerService {
       return await response.json();
     } catch (error) {
       console.error('Error promoting linker:', error);
+      throw error;
+    }
+  }
+
+  // Check if a URL has already been posted
+  async checkDuplicateLink(url: string): Promise<{
+    exists: boolean;
+    linker?: Linker;
+    message?: string;
+  }> {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/linkers/check-duplicate?url=${encodeURIComponent(url)}`
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to check duplicate link');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error checking duplicate link:', error);
       throw error;
     }
   }

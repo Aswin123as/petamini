@@ -16,11 +16,13 @@ interface UseCachedLinkersResult {
 }
 
 export function useCachedLinkers(
-  sortBy: 'recent' | 'popular'
+  sortBy: 'recent' | 'popular',
+  options?: { bypassCache?: boolean }
 ): UseCachedLinkersResult {
   const [linkers, setLinkers] = useState<Linker[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const bypassCache = options?.bypassCache === true;
 
   /**
    * Fetch linkers with caching
@@ -53,9 +55,12 @@ export function useCachedLinkers(
    */
   const refresh = useCallback(
     async (forceRefresh: boolean = false) => {
-      await fetchLinkers(forceRefresh);
+      // If bypassCache is enabled and caller didn't explicitly override,
+      // force refresh to always fetch fresh data.
+      const effectiveForce = forceRefresh || bypassCache;
+      await fetchLinkers(effectiveForce);
     },
-    [fetchLinkers]
+    [fetchLinkers, bypassCache]
   );
 
   /**
@@ -69,8 +74,9 @@ export function useCachedLinkers(
    * Initial load
    */
   useEffect(() => {
-    fetchLinkers();
-  }, [fetchLinkers]);
+    // On initial load, respect bypassCache by forcing refresh if enabled
+    fetchLinkers(bypassCache);
+  }, [fetchLinkers, bypassCache]);
 
   return {
     linkers,
