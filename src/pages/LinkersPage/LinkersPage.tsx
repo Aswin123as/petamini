@@ -99,7 +99,6 @@ export default function LinkSharingApp() {
     linkers: cachedLinkers,
     loading,
     error: cacheError,
-    refresh: refreshCache,
   } = useCachedLinkers(sortParam, { bypassCache: true });
 
   const showToast = (
@@ -248,8 +247,31 @@ export default function LinkSharingApp() {
       // Update cache with new linker
       linkerRepository.updateCacheAfterCreate(newLinker);
 
-      // Refresh to show new post
-      await refreshCache();
+      // Add new post to state directly without full refresh
+      const ensuredLinks = Array.isArray(newLinker.links)
+        ? newLinker.links
+        : extractUrls(newLinker.content);
+      const firstUrl = ensuredLinks[0];
+      const cachedPreview = firstUrl ? previewCache.get(firstUrl) : null;
+
+      const newLink: Link = {
+        ...newLinker,
+        links: ensuredLinks,
+        promoted: false,
+        preview: cachedPreview,
+        previewLoading: ensuredLinks.length > 0 && !cachedPreview,
+      };
+
+      setLinks((prevLinks) => [newLink, ...prevLinks]);
+
+      // Fetch preview for new post if needed
+      if (
+        firstUrl &&
+        !cachedPreview &&
+        !fetchedPreviewsRef.current.has(newLinker.id)
+      ) {
+        fetchLinkPreview(firstUrl, newLinker.id);
+      }
 
       setInputText('');
       setInputTags('');
@@ -289,8 +311,19 @@ export default function LinkSharingApp() {
       // Update cache after promotion
       linkerRepository.updateCacheAfterPromote(id, updatedLinker);
 
-      // Refresh to show updated promotions
-      await refreshCache();
+      // Update state directly without full refresh to avoid re-render
+      setLinks((prevLinks) =>
+        prevLinks.map((link) =>
+          link.id === id
+            ? {
+                ...link,
+                promotions: updatedLinker.promotions,
+                promotedBy: updatedLinker.promotedBy,
+                promoted: updatedLinker.promotedBy.includes(telegramUser.id),
+              }
+            : link
+        )
+      );
     } catch (err) {
       console.error('Error promoting linker:', err);
       showToast('Failed to promote post. Please try again.', 'error');
@@ -309,13 +342,29 @@ export default function LinkSharingApp() {
     if (!telegramUser) return;
 
     try {
-      await linkerService.updateLinker(postId, telegramUser.id, content, tags);
+      const updatedLinker = await linkerService.updateLinker(
+        postId,
+        telegramUser.id,
+        content,
+        tags
+      );
 
-      // Invalidate cache to force fresh data on next load
+      // Update cache
       linkerRepository.invalidateCache();
 
-      // Refresh to show updated post
-      await refreshCache();
+      // Update state directly without full refresh
+      setLinks((prevLinks) =>
+        prevLinks.map((link) =>
+          link.id === postId
+            ? {
+                ...link,
+                content: updatedLinker.content,
+                tags: updatedLinker.tags,
+                links: updatedLinker.links || link.links,
+              }
+            : link
+        )
+      );
 
       setEditingLink(null);
       showToast('Post updated successfully!', 'success');
@@ -338,8 +387,8 @@ export default function LinkSharingApp() {
       // Update cache after deletion
       linkerRepository.updateCacheAfterDelete(id);
 
-      // Refresh to remove deleted post
-      await refreshCache();
+      // Update state directly without full refresh
+      setLinks((prevLinks) => prevLinks.filter((link) => link.id !== id));
 
       showToast('Post deleted successfully!', 'success');
     } catch (err) {
