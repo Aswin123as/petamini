@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { linkerService } from '@/services/linkerService.ts';
 import { linkerRepository } from '@/services/linkerRepository';
+import { previewCache } from '@/services/previewCache';
 import { useCachedLinkers } from '@/hooks/useCachedLinkers';
 import Toast from '@/components/Toast/Toast';
 import { EditPostModal } from '@/components/EditPostModal/EditPostModal';
@@ -136,6 +137,11 @@ export default function LinkSharingApp() {
             : link
         )
       );
+
+      // Cache preview for future sessions if available
+      if (preview) {
+        previewCache.set(url, preview);
+      }
     } catch (error) {
       console.error('Error fetching preview:', error);
       // Set previewLoading to false on error
@@ -156,15 +162,19 @@ export default function LinkSharingApp() {
       const ensuredLinks = Array.isArray((linker as any).links)
         ? (linker as any).links
         : extractUrls(linker.content);
+      const firstUrl = ensuredLinks[0];
+      const cachedPreview = firstUrl ? previewCache.get(firstUrl) : null;
       return {
         ...linker,
         links: ensuredLinks,
         promoted: telegramUser
           ? linker.promotedBy.includes(telegramUser.id)
           : false,
-        preview: null,
+        preview: cachedPreview,
         previewLoading:
-          ensuredLinks.length > 0 && !fetchedPreviewsRef.current.has(linker.id),
+          ensuredLinks.length > 0 &&
+          !cachedPreview &&
+          !fetchedPreviewsRef.current.has(linker.id),
       } as Link;
     });
     setLinks(linksWithPromoted);
@@ -173,7 +183,12 @@ export default function LinkSharingApp() {
     if (isMounted) {
       linksWithPromoted.forEach((link) => {
         const first = getFirstLink(link);
-        if (first && !fetchedPreviewsRef.current.has(link.id)) {
+        // Only fetch if we don't already have a cached preview
+        if (
+          first &&
+          !fetchedPreviewsRef.current.has(link.id) &&
+          !previewCache.get(first)
+        ) {
           fetchLinkPreview(first, link.id);
         }
       });
