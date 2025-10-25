@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   TrendingUp,
   Link2,
@@ -88,7 +88,8 @@ export default function LinkSharingApp() {
   const [editingLink, setEditingLink] = useState<Link | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const telegramUser = getTelegramUser();
+  // Memoize telegram user to prevent re-creation on every render
+  const telegramUser = useMemo(() => getTelegramUser(), []);
 
   // Use cached linkers hook (only for recent/popular, not my-posts)
   const sortParam = sortBy === 'my-posts' ? 'recent' : sortBy;
@@ -107,16 +108,90 @@ export default function LinkSharingApp() {
   };
 
   // Convert cached linkers to Link format with promoted status
-  const links: Link[] = cachedLinkers.map((linker) => ({
-    ...linker,
-    promoted: telegramUser
-      ? linker.promotedBy.includes(telegramUser.id)
-      : false,
-    preview: null,
-    previewLoading: linker.type === 'url',
-  }));
+  const [links, setLinks] = useState<Link[]>([]);
+  const fetchedPreviewsRef = useRef<Set<string>>(new Set());
+
+  // Fetch link preview (memoized to prevent re-creation)
+  const fetchLinkPreview = useCallback(async (url: string, linkId: string) => {
+    // Check if already fetched
+    if (fetchedPreviewsRef.current.has(linkId)) {
+      return;
+    }
+
+    // Mark as fetched to prevent duplicate calls
+    fetchedPreviewsRef.current.add(linkId);
+
+    try {
+      const preview = await linkerService.fetchLinkPreview(url);
+
+      setLinks((prevLinks) =>
+        prevLinks.map((link) =>
+          link.id === linkId
+            ? {
+                ...link,
+                preview,
+                previewLoading: false,
+              }
+            : link
+        )
+      );
+    } catch (error) {
+      console.error('Error fetching preview:', error);
+      // Set previewLoading to false on error
+      setLinks((prevLinks) =>
+        prevLinks.map((link) =>
+          link.id === linkId
+            ? { ...link, preview: null, previewLoading: false }
+            : link
+        )
+      );
+    }
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const linksWithPreview = cachedLinkers.map((linker) => ({
+      ...linker,
+      promoted: telegramUser
+        ? linker.promotedBy.includes(telegramUser.id)
+        : false,
+      preview: null,
+      previewLoading:
+        linker.type === 'url' && !fetchedPreviewsRef.current.has(linker.id),
+    }));
+    setLinks(linksWithPreview);
+
+    // Only fetch previews for new links that haven't been fetched yet
+    const newUrlLinks = linksWithPreview.filter(
+      (link) => link.type === 'url' && !fetchedPreviewsRef.current.has(link.id)
+    );
+
+    // Fetch previews only if there are new links
+    if (newUrlLinks.length > 0 && isMounted) {
+      newUrlLinks.forEach((link) => {
+        fetchLinkPreview(link.content, link.id);
+      });
+    }
+
+    return () => {
+      isMounted = false;
+    };
+  }, [cachedLinkers, telegramUser, fetchLinkPreview]);
 
   const error = cacheError;
+
+  // Memoize word count to avoid repetitive calculations
+  const wordCount = useMemo(() => {
+    const trimmed = inputText.trim();
+    if (!trimmed) return 0;
+    return trimmed.split(/\s+/).filter((word) => word.length > 0).length;
+  }, [inputText]);
+
+  // Memoize tag count to avoid repetitive calculations
+  const tagCount = useMemo(() => {
+    return inputTags.split(',').filter((t) => t.trim()).length;
+  }, [inputTags]);
 
   const isUrl = (text: string) => {
     // Check if text starts with common URL protocols
@@ -289,7 +364,7 @@ export default function LinkSharingApp() {
     }
   };
 
-  const getSortedLinks = () => {
+  const getSortedLinks = useMemo(() => {
     let filtered = [...links];
 
     // Filter by user for my-posts tab
@@ -304,7 +379,7 @@ export default function LinkSharingApp() {
       (a, b) =>
         new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
     );
-  };
+  }, [links, sortBy, telegramUser]);
 
   const getTimeAgo = (timestamp: string) => {
     const seconds = Math.floor(
@@ -442,32 +517,18 @@ export default function LinkSharingApp() {
                   <span>·</span>
                   <span
                     className={`leading-tight ${
-                      inputText.trim() &&
-                      inputText
-                        .trim()
-                        .split(/\s+/)
-                        .filter((word) => word.length > 0).length > 250
-                        ? 'text-red-500 font-medium'
-                        : ''
+                      wordCount > 250 ? 'text-red-500 font-medium' : ''
                     }`}
                   >
-                    {inputText.trim()
-                      ? inputText
-                          .trim()
-                          .split(/\s+/)
-                          .filter((word) => word.length > 0).length
-                      : 0}
-                    /250 words
+                    {wordCount}/250 words
                   </span>
                   <span>·</span>
                   <span
                     className={`leading-tight ${
-                      inputTags.split(',').filter((t) => t.trim()).length > 2
-                        ? 'text-red-500 font-medium'
-                        : ''
+                      tagCount > 2 ? 'text-red-500 font-medium' : ''
                     }`}
                   >
-                    {inputTags.split(',').filter((t) => t.trim()).length}/2 tags
+                    {tagCount}/2 tags
                   </span>
                 </div>
                 <button
@@ -530,7 +591,7 @@ export default function LinkSharingApp() {
         {/* Links List */}
         {!loading && (
           <div className="space-y-2">
-            {getSortedLinks().map((link) => (
+            {getSortedLinks.map((link) => (
               <div
                 key={link.id}
                 className="bg-white border border-gray-200 rounded-lg p-3 active:bg-gray-50 transition-colors"

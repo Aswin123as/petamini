@@ -95,7 +95,7 @@ func (h *LinkerHandler) CreateLinker(c *gin.Context) {
 	c.JSON(http.StatusCreated, linker)
 }
 
-// PromoteLinker promotes or unpromotes a linker post
+// PromoteLinker promotes a linker post (one user can promote only once, non-toggleable)
 func (h *LinkerHandler) PromoteLinker(c *gin.Context) {
 	linkerID := c.Param("id")
 	userIDStr := c.Query("userId")
@@ -138,19 +138,16 @@ func (h *LinkerHandler) PromoteLinker(c *gin.Context) {
 		}
 	}
 
-	var update bson.M
+	// If already promoted, return current state (no toggle - one promotion only)
 	if hasPromoted {
-		// Remove promotion
-		update = bson.M{
-			"$inc":  bson.M{"promotions": -1},
-			"$pull": bson.M{"promotedBy": userID},
-		}
-	} else {
-		// Add promotion
-		update = bson.M{
-			"$inc":  bson.M{"promotions": 1},
-			"$push": bson.M{"promotedBy": userID},
-		}
+		c.JSON(http.StatusOK, linker)
+		return
+	}
+
+	// Add promotion (first time only)
+	update := bson.M{
+		"$inc":  bson.M{"promotions": 1},
+		"$push": bson.M{"promotedBy": userID},
 	}
 
 	opts := options.FindOneAndUpdate().SetReturnDocument(options.After)
