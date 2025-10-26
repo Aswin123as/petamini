@@ -2,8 +2,10 @@ package handlers
 
 import (
 	"context"
+	"math"
 	"net/http"
 	"regexp"
+	"sort"
 	"strconv"
 	"time"
 
@@ -37,11 +39,10 @@ func (h *LinkerHandler) GetAllLinkers(c *gin.Context) {
 	// Get sort parameter (recent or popular)
 	sortBy := c.DefaultQuery("sort", "recent")
 
-	// Set up sorting options
-	var sortOption bson.D
+	// Default DB-side sorting
+	sortOption := bson.D{{Key: "timestamp", Value: -1}}
 	if sortBy == "popular" {
-		sortOption = bson.D{{Key: "promotions", Value: -1}}
-	} else {
+		// We'll fetch recent posts first (time-desc) then apply app-side ranking with recency and quality weights.
 		sortOption = bson.D{{Key: "timestamp", Value: -1}}
 	}
 
@@ -57,6 +58,36 @@ func (h *LinkerHandler) GetAllLinkers(c *gin.Context) {
 	var linkers []models.Linker
 	if err = cursor.All(ctx, &linkers); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to decode linkers"})
+		return
+	}
+
+	if sortBy == "popular" {
+		// Compute a lightweight trending score per post:
+		// score = promotions + 0.25*sqrt(promotions) + recencyBoost
+		// recencyBoost = max(0, 48 - ageHours) * 0.05 (recent posts get a small lift up to 48h)
+		now := time.Now()
+		type scored struct {
+			l     models.Linker
+			score float64
+		}
+		scoredList := make([]scored, 0, len(linkers))
+		for _, l := range linkers {
+			ageHours := now.Sub(l.Timestamp).Hours()
+			if ageHours < 0 {
+				ageHours = 0
+			}
+			recencyBoost := math.Max(0, 48-ageHours) * 0.05
+			promo := float64(l.Promotions)
+			s := promo + 0.25*math.Sqrt(math.Max(0, promo)) + recencyBoost
+			scoredList = append(scoredList, scored{l: l, score: s})
+		}
+		sort.Slice(scoredList, func(i, j int) bool { return scoredList[i].score > scoredList[j].score })
+		// Write back in ranked order
+		ranked := make([]models.Linker, 0, len(scoredList))
+		for _, it := range scoredList {
+			ranked = append(ranked, it.l)
+		}
+		c.JSON(http.StatusOK, ranked)
 		return
 	}
 
@@ -228,45 +259,33 @@ func (h *LinkerHandler) PromoteLinker(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	// Find the linker
-	var linker models.Linker
-	err = collection.FindOne(ctx, bson.M{"_id": objectID}).Decode(&linker)
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Linker not found"})
-		return
-	}
-
-	// Check if user already promoted
-	hasPromoted := false
-	for _, id := range linker.PromotedBy {
-		if id == userID {
-			hasPromoted = true
-			break
-		}
-	}
-
-	// If already promoted, return current state (no toggle - one promotion only)
-	if hasPromoted {
-		c.JSON(http.StatusOK, linker)
-		return
-	}
-
-	// Add promotion (first time only)
+	// Atomic one-time promote: only update if userID not already in promoted_by
+	filter := bson.M{"_id": objectID, "promoted_by": bson.M{"$ne": userID}}
 	update := bson.M{
 		"$inc":  bson.M{"promotions": 1},
-		// store in the correct BSON field name used by the model
 		"$push": bson.M{"promoted_by": userID},
 	}
-
 	opts := options.FindOneAndUpdate().SetReturnDocument(options.After)
+
 	var updatedLinker models.Linker
-	err = collection.FindOneAndUpdate(ctx, bson.M{"_id": objectID}, update, opts).Decode(&updatedLinker)
+	err = collection.FindOneAndUpdate(ctx, filter, update, opts).Decode(&updatedLinker)
+	if err == mongo.ErrNoDocuments {
+		// Already promoted or linker not found; fetch current doc to return
+		var current models.Linker
+		if err2 := collection.FindOne(ctx, bson.M{"_id": objectID}).Decode(&current); err2 != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Linker not found"})
+			return
+		}
+		// Return existing state without changes
+		c.JSON(http.StatusOK, current)
+		return
+	}
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update linker"})
 		return
 	}
 
-	// Increment user's promotions_made and update activity
+	// Increment user's promotions_made and update activity (only when promotion actually happened)
 	usersCol := h.db.Collection("users")
 	_, _ = usersCol.UpdateOne(ctx,
 		bson.M{"telegram_id": userID},

@@ -139,7 +139,7 @@ Tap Open to jump in.`, user.UserName, user.ID)
 // openLinkersKeyboard returns a simple inline keyboard to open the mini app/frontend
 func (h *BotCommandHandler) openLinkersKeyboard() tgbotapi.InlineKeyboardMarkup {
 	// Prefer production frontend if available
-	url := "https://linkshare.fun"
+	url := "t.me/linkersminiBot/Direct"
 	row := tgbotapi.NewInlineKeyboardRow(
 		tgbotapi.NewInlineKeyboardButtonURL("Open Linkers", url),
 	)

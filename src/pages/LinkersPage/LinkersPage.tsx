@@ -89,6 +89,7 @@ export default function LinkSharingApp() {
   });
   const [editingLink, setEditingLink] = useState<Link | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [promotingIds, setPromotingIds] = useState<Set<string>>(new Set());
 
   // Memoize telegram user to prevent re-creation on every render
   const telegramUser = useMemo(() => getTelegramUser(), []);
@@ -314,6 +315,14 @@ export default function LinkSharingApp() {
       return;
     }
 
+    // Prevent rapid double-clicks while request is in-flight
+    setPromotingIds((prev: Set<string>) => {
+      if (prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+
     try {
       const updatedLinker = await linkerService.promoteLinker(
         id,
@@ -339,6 +348,13 @@ export default function LinkSharingApp() {
     } catch (err) {
       console.error('Error promoting linker:', err);
       showToast('Failed to promote post. Please try again.', 'error');
+    } finally {
+      setPromotingIds((prev: Set<string>) => {
+        if (!prev.has(id)) return prev;
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
     }
   };
 
@@ -729,10 +745,17 @@ export default function LinkSharingApp() {
                 <div className="flex items-start gap-2">
                   <button
                     onClick={() => handlePromote(link.id)}
-                    disabled={link.promoted}
-                    className={`flex flex-col items-center gap-0.5 min-w-[32px] group ${
+                    disabled={link.promoted || promotingIds.has(link.id)}
+                    title={
                       link.promoted
-                        ? 'opacity-100 cursor-default'
+                        ? 'Already promoted'
+                        : promotingIds.has(link.id)
+                        ? 'Promoting...'
+                        : 'Promote'
+                    }
+                    className={`flex flex-col items-center gap-0.5 min-w-[32px] group disabled:opacity-60 disabled:cursor-not-allowed ${
+                      link.promoted
+                        ? 'opacity-100'
                         : 'opacity-70 cursor-pointer'
                     }`}
                   >
@@ -741,14 +764,18 @@ export default function LinkSharingApp() {
                         link.promoted ? 'bg-blue-50' : 'active:bg-gray-100'
                       }`}
                     >
-                      <TrendingUp
-                        className={`transition-colors ${
-                          link.promoted
-                            ? 'text-blue-600'
-                            : 'text-gray-500 group-active:text-blue-600'
-                        }`}
-                        size={16}
-                      />
+                      {promotingIds.has(link.id) ? (
+                        <Loader2 className="w-4 h-4 animate-spin text-gray-500" />
+                      ) : (
+                        <TrendingUp
+                          className={`transition-colors ${
+                            link.promoted
+                              ? 'text-blue-600'
+                              : 'text-gray-500 group-active:text-blue-600'
+                          }`}
+                          size={16}
+                        />
+                      )}
                     </div>
                     <span
                       className={`text-[10px] font-medium ${
