@@ -49,6 +49,12 @@ type User struct {
 	PurchasedCards []OwnedPokemon     `bson:"purchased_cards" json:"purchasedCards"`
 	TotalPurchases int                `bson:"total_purchases" json:"totalPurchases"` // Number of purchases
 	TotalSpent     int                `bson:"total_spent" json:"totalSpent"`         // Total stars spent
+	// Linkers app fields
+	PostsCount      int       `bson:"posts_count" json:"postsCount"`                // Number of linkers created
+	PromotionsMade  int       `bson:"promotions_made" json:"promotionsMade"`        // Number of promotions performed
+	Role            string    `bson:"role" json:"role"`                              // user, admin
+	IsBanned        bool      `bson:"is_banned" json:"isBanned"`
+	LastActive      time.Time `bson:"last_active" json:"lastActive"`
 	CreatedAt      time.Time          `bson:"created_at" json:"createdAt"`
 	UpdatedAt      time.Time          `bson:"updated_at" json:"updatedAt"`
 }
@@ -129,4 +135,27 @@ type CreateLinkerRequest struct {
 	Username string   `json:"username" binding:"required"`
 	Content  string   `json:"content" binding:"required"`
 	Tags     []string `json:"tags"`
+}
+
+// PageAccess represents a user page access log
+type PageAccess struct {
+	ID        primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+	UserID    int64              `bson:"user_id" json:"userId"`           // Telegram User ID
+	Username  string             `bson:"username" json:"username"`
+	FirstName string             `bson:"first_name" json:"firstName"`
+	LastName  string             `bson:"last_name" json:"lastName"`
+	PageURL   string             `bson:"page_url" json:"pageUrl"`         // Page accessed
+	UserAgent string             `bson:"user_agent" json:"userAgent"`     // Browser/device info
+	IPAddress string             `bson:"ip_address" json:"ipAddress"`     // User IP (optional)
+	Timestamp time.Time          `bson:"timestamp" json:"timestamp"`
+	CreatedAt time.Time          `bson:"created_at" json:"createdAt"`
+}
+
+// TrackUserRequest represents the request to track user access
+type TrackUserRequest struct {
+	UserID    int64  `json:"userId" binding:"required,min=1"`
+	Username  string `json:"username" binding:"required"`
+	FirstName string `json:"firstName"`
+	LastName  string `json:"lastName"`
+	PageURL   string `json:"pageUrl"`
 }

@@ -36,12 +36,18 @@ func (us *UserService) CreateOrUpdateUser(ctx context.Context, telegramID int64,
 			"first_name": firstName,
 			"last_name":  lastName,
 			"updated_at": time.Now(),
+			"last_active": time.Now(),
 		},
 		"$setOnInsert": bson.M{
 			"telegram_id":      telegramID,
 			"purchased_cards":  []models.OwnedPokemon{},
 			"total_purchases":  0,
 			"total_spent":      0,
+			// Linkers app defaults
+			"posts_count":      0,
+			"promotions_made":  0,
+			"role":             "user",
+			"is_banned":        false,
 			"created_at":       time.Now(),
 		},
 	}

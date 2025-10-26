@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"strings"
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -38,18 +37,23 @@ func (h *BotCommandHandler) HandleCommand(update tgbotapi.Update) {
 	switch update.Message.Command() {
 	case "start":
 		msg.Text = h.handleStart(update.Message.From)
+		// Provide quick action button to open the mini app (Linkers)
+		msg.ReplyMarkup = h.openLinkersKeyboard()
 	case "help":
 		msg.Text = h.handleHelp()
-	case "collection":
-		msg.Text = h.handleCollection(update.Message.From.ID)
-	case "stats":
-		msg.Text = h.handleStats(update.Message.From.ID)
-	case "leaderboard":
-		msg.Text = h.handleLeaderboard()
-	case "profile":
-		msg.Text = h.handleProfile(update.Message.From.ID)
-	case "shop":
-		msg.Text = h.handleShop()
+		msg.ReplyMarkup = h.openLinkersKeyboard()
+	case "open":
+		msg.Text = "🔗 Open Linkers to share and discover links."
+		msg.ReplyMarkup = h.openLinkersKeyboard()
+	case "recent":
+		msg.Text = h.handleRecent()
+		msg.ReplyMarkup = h.openLinkersKeyboard()
+	case "popular":
+		msg.Text = h.handlePopular()
+		msg.ReplyMarkup = h.openLinkersKeyboard()
+	case "myposts":
+		msg.Text = h.handleMyPosts(update.Message.From)
+		msg.ReplyMarkup = h.openLinkersKeyboard()
 	default:
 		msg.Text = "❓ Unknown command. Type /help to see available commands."
 	}
@@ -71,269 +75,74 @@ func (h *BotCommandHandler) handleStart(user *tgbotapi.User) string {
 		log.Printf("Error creating user: %v", err)
 	}
 
-	return fmt.Sprintf(`🎮 *Welcome to PetaMini - Pokemon Card Collection!*
+	return fmt.Sprintf(`🖤 *Welcome to Linkers* — share and discover links, fast.
 
 Hey %s! 👋
 
-Collect rare Pokemon cards and build your ultimate collection! 
+What you can do:
+• 🔗 Post links or notes
+• 🔥 Promote what you like.
+• 🕒 Browse Recent or Popular
+• 👤 See your posts under My Posts
 
-🃏 *What you can do:*
-• Buy Pokemon cards with Telegram Stars ⭐
-• Build your collection of rare cards
-• Compete on the leaderboard
-• Track your stats and achievements
+Quick actions:
+/open — Open the mini app
+/recent — How it works (Recent)
+/popular — How it works (Popular)
+/myposts — Your posts overview
+/help — All commands
 
-*Commands:*
-/shop - Browse available Pokemon cards
-/collection - View your cards
-/stats - Check your statistics
-/leaderboard - Top collectors
-/profile - Your profile info
-/help - Show all commands
-
-Ready to start? Open the mini app and start collecting! 🚀`, user.FirstName)
+Tap the button below to open Linkers.`, user.FirstName)
 }
 
 // handleHelp handles /help command
 func (h *BotCommandHandler) handleHelp() string {
-	return `📖 *Available Commands*
+	return `📖 *Commands*
 
-*Collection Management:*
-/shop - Browse all Pokemon cards in shop
-/collection - View your owned Pokemon cards
-/profile - View your profile and account info
+Linkers:
+/open — Open the mini app
+/recent — About Recent feed
+/popular — About Popular feed
+/myposts — Where to find your posts
+/help — Show this message
 
-*Statistics & Competition:*
-/stats - View your purchase statistics
-/leaderboard - See top collectors
-
-*Information:*
-/start - Welcome message
-/help - Show this help message
-
-*How to Buy:*
-1. Open the PetaMini mini app
-2. Browse Pokemon cards
-3. Click "Buy" on any card
-4. Pay with Telegram Stars ⭐
-5. Cards are added to your collection!
-
-*Rarity Levels:*
-⚪ Common - Easy to collect
-🔵 Rare - Medium difficulty
-🟣 Epic - Hard to find
-🟠 Legendary - Ultra rare!
-
-Need support? Contact @YourSupportUsername`
+Notes:
+• Promotion is one-time per user per post
+• Only the 🔥/Trending button is actionable per post
+• Open the app for full experience`
 }
 
-// handleCollection handles /collection command
-func (h *BotCommandHandler) handleCollection(userID int64) string {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+// handleRecent describes the Recent feed behavior
+func (h *BotCommandHandler) handleRecent() string {
+	return `🕒 *Recent*
 
-	user, err := h.userService.GetUserByTelegramID(ctx, userID)
-	if err != nil {
-		return "❌ Error fetching your collection. Please try again later."
-	}
-
-	if user == nil || len(user.PurchasedCards) == 0 {
-		return `📦 *Your Collection is Empty*
-
-You haven't purchased any Pokemon cards yet!
-
-Open the mini app to start collecting! 🎮
-Type /shop to see available cards.`
-	}
-
-	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("🎴 *%s's Pokemon Collection*\n\n", user.Username))
-	sb.WriteString(fmt.Sprintf("📊 Total Cards: *%d*\n", len(user.PurchasedCards)))
-	sb.WriteString(fmt.Sprintf("💎 Total Spent: *%d ⭐*\n\n", user.TotalSpent))
-
-	// Group cards by Pokemon
-	cardMap := make(map[string]int)
-	for _, card := range user.PurchasedCards {
-		cardMap[card.PokemonName] += card.Units
-	}
-
-	sb.WriteString("*Your Cards:*\n")
-	for pokemonName, units := range cardMap {
-		sb.WriteString(fmt.Sprintf("• %s × %d\n", pokemonName, units))
-	}
-
-	return sb.String()
+The Recent feed shows the latest posts first. Post a link or note, and it appears at the top. Use the mini app for the full experience.`
 }
 
-// handleStats handles /stats command
-func (h *BotCommandHandler) handleStats(userID int64) string {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+// handlePopular describes the Popular feed behavior
+func (h *BotCommandHandler) handlePopular() string {
+	return `🔥 *Popular*
 
-	user, err := h.userService.GetUserByTelegramID(ctx, userID)
-	if err != nil {
-		return "❌ Error fetching your stats. Please try again later."
-	}
-
-	if user == nil {
-		return "❌ No stats available. Start collecting Pokemon cards first!"
-	}
-
-	// Calculate statistics
-	uniquePokemon := make(map[string]bool)
-	totalCards := 0
-	mostRecent := "N/A"
-
-	for _, card := range user.PurchasedCards {
-		uniquePokemon[card.PokemonName] = true
-		totalCards += card.Units
-		mostRecent = card.PokemonName // Last one in array
-	}
-
-	accountAge := time.Since(user.CreatedAt).Hours() / 24 // Days
-
-	return fmt.Sprintf(`📊 *Your Statistics*
-
-👤 *Profile:*
-• Username: @%s
-• Member Since: %s
-• Account Age: %.0f days
-
-🎴 *Collection Stats:*
-• Total Cards: *%d*
-• Unique Pokemon: *%d*
-• Total Purchases: *%d*
-• Total Spent: *%d ⭐*
-
-📈 *Activity:*
-• Most Recent: %s
-• Last Purchase: %s
-
-💰 *Economics:*
-• Average per Purchase: *%.1f ⭐*
-• Cards per Purchase: *%.1f*
-
-Keep collecting to climb the leaderboard! 🚀`,
-		user.Username,
-		user.CreatedAt.Format("Jan 2, 2006"),
-		accountAge,
-		totalCards,
-		len(uniquePokemon),
-		user.TotalPurchases,
-		user.TotalSpent,
-		mostRecent,
-		user.UpdatedAt.Format("Jan 2, 2006"),
-		float64(user.TotalSpent)/float64(max(user.TotalPurchases, 1)),
-		float64(totalCards)/float64(max(user.TotalPurchases, 1)))
+Posts ordered by promotions. Each user can promote a post only once. Open the mini app to browse and promote.`
 }
 
-// handleLeaderboard handles /leaderboard command
-func (h *BotCommandHandler) handleLeaderboard() string {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+// handleMyPosts gives a brief and points to the app
+func (h *BotCommandHandler) handleMyPosts(user *tgbotapi.User) string {
+	return fmt.Sprintf(`👤 *My Posts*
 
-	topUsers, err := h.userService.GetTopCollectors(ctx, 10)
-	if err != nil {
-		return "❌ Error fetching leaderboard. Please try again later."
-	}
+Posts you created appear under My Posts in the app.
+User: @%s (%d)
 
-	if len(topUsers) == 0 {
-		return "📊 Leaderboard is empty. Be the first collector!"
-	}
-
-	var sb strings.Builder
-	sb.WriteString("🏆 *Top Collectors Leaderboard*\n\n")
-
-	medals := []string{"🥇", "🥈", "🥉"}
-	for i, user := range topUsers {
-		rank := fmt.Sprintf("%d.", i+1)
-		if i < len(medals) {
-			rank = medals[i]
-		}
-
-		totalCards := 0
-		for _, card := range user.PurchasedCards {
-			totalCards += card.Units
-		}
-
-		sb.WriteString(fmt.Sprintf("%s *%s*\n", rank, user.Username))
-		sb.WriteString(fmt.Sprintf("   💎 %d ⭐ | 🎴 %d cards | 🛍️ %d purchases\n\n",
-			user.TotalSpent, totalCards, user.TotalPurchases))
-	}
-
-	return sb.String()
+Tap Open to jump in.`, user.UserName, user.ID)
 }
 
-// handleProfile handles /profile command
-func (h *BotCommandHandler) handleProfile(userID int64) string {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	user, err := h.userService.GetUserByTelegramID(ctx, userID)
-	if err != nil {
-		return "❌ Error fetching your profile. Please try again later."
-	}
-
-	if user == nil {
-		return "❌ Profile not found. Please start the bot with /start"
-	}
-
-	return fmt.Sprintf(`👤 *Profile Information*
-
-*Basic Info:*
-• Name: %s %s
-• Username: @%s
-• User ID: %d
-
-*Account Status:*
-• Created: %s
-• Last Active: %s
-• Status: ✅ Active
-
-*Collection:*
-• Total Cards: %d
-• Total Purchases: %d
-• Total Spent: %d ⭐
-
-Type /collection to see your cards!
-Type /stats for detailed statistics!`,
-		user.FirstName,
-		user.LastName,
-		user.Username,
-		user.TelegramID,
-		user.CreatedAt.Format("Jan 2, 2006 15:04"),
-		user.UpdatedAt.Format("Jan 2, 2006 15:04"),
-		len(user.PurchasedCards),
-		user.TotalPurchases,
-		user.TotalSpent)
+// openLinkersKeyboard returns a simple inline keyboard to open the mini app/frontend
+func (h *BotCommandHandler) openLinkersKeyboard() tgbotapi.InlineKeyboardMarkup {
+	// Prefer production frontend if available
+	url := "https://linkshare.fun"
+	row := tgbotapi.NewInlineKeyboardRow(
+		tgbotapi.NewInlineKeyboardButtonURL("Open Linkers", url),
+	)
+	return tgbotapi.NewInlineKeyboardMarkup(row)
 }
 
-// handleShop handles /shop command
-func (h *BotCommandHandler) handleShop() string {
-	return `🏪 *Pokemon Card Shop*
-
-Open the PetaMini mini app to browse all available Pokemon cards!
-
-*Available Rarities:*
-⚪ Common - 10-50 ⭐
-🔵 Rare - 100-200 ⭐
-🟣 Epic - 300-500 ⭐
-🟠 Legendary - 1000+ ⭐
-
-*How to Shop:*
-1. Open the mini app
-2. Browse Pokemon cards
-3. Click "Buy" on any card
-4. Complete payment with Telegram Stars
-5. Cards are instantly added to your collection!
-
-Each Pokemon has limited units available - grab them before they're gone! 🏃‍♂️💨`
-}
-
-// Helper function for max
-func max(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
-}

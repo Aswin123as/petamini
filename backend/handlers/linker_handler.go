@@ -176,6 +176,29 @@ func (h *LinkerHandler) CreateLinker(c *gin.Context) {
 		return
 	}
 
+	// Update user's post count and activity
+	usersCol := h.db.Collection("users")
+	_, _ = usersCol.UpdateOne(ctx,
+		bson.M{"telegram_id": linker.UserID},
+		bson.M{
+			"$set": bson.M{
+				"username":    linker.Username,
+				"updated_at":  time.Now(),
+				"last_active": time.Now(),
+			},
+			"$setOnInsert": bson.M{
+				"telegram_id":     linker.UserID,
+				"posts_count":     0,
+				"promotions_made": 0,
+				"role":            "user",
+				"is_banned":       false,
+				"created_at":      time.Now(),
+			},
+			"$inc": bson.M{"posts_count": 1},
+		},
+		options.Update().SetUpsert(true),
+	)
+
 	c.JSON(http.StatusCreated, linker)
 }
 
@@ -231,7 +254,8 @@ func (h *LinkerHandler) PromoteLinker(c *gin.Context) {
 	// Add promotion (first time only)
 	update := bson.M{
 		"$inc":  bson.M{"promotions": 1},
-		"$push": bson.M{"promotedBy": userID},
+		// store in the correct BSON field name used by the model
+		"$push": bson.M{"promoted_by": userID},
 	}
 
 	opts := options.FindOneAndUpdate().SetReturnDocument(options.After)
@@ -241,6 +265,28 @@ func (h *LinkerHandler) PromoteLinker(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update linker"})
 		return
 	}
+
+	// Increment user's promotions_made and update activity
+	usersCol := h.db.Collection("users")
+	_, _ = usersCol.UpdateOne(ctx,
+		bson.M{"telegram_id": userID},
+		bson.M{
+			"$set": bson.M{
+				"updated_at":  time.Now(),
+				"last_active": time.Now(),
+			},
+			"$setOnInsert": bson.M{
+				"posts_count":     0,
+				"promotions_made": 0,
+				"role":            "user",
+				"is_banned":       false,
+				"created_at":      time.Now(),
+				"telegram_id":     userID,
+			},
+			"$inc": bson.M{"promotions_made": 1},
+		},
+		options.Update().SetUpsert(true),
+	)
 
 	c.JSON(http.StatusOK, updatedLinker)
 }

@@ -23,6 +23,11 @@ go.work
 .env
 .env.local
 .env.*.local
+.env.development
+.env.production
+.env.docker
+.env.test
+.env.*
 
 # IDE
 .vscode/

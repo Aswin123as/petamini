@@ -8,6 +8,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"github.com/Aswin123as/petamini-backend/config"
 	"github.com/Aswin123as/petamini-backend/database"
 	"github.com/Aswin123as/petamini-backend/handlers"
@@ -25,25 +28,54 @@ func main() {
 	}
 	defer db.Close()
 
-	// Initialize Telegram Bot
-	bot, err := tgbotapi.NewBotAPI(cfg.TelegramBotToken)
-	if err != nil {
-		log.Fatalf("Failed to initialize Telegram bot: %v", err)
+	// Setup database collections and indexes
+	log.Println("🔧 Setting up database collections and indexes...")
+	if err := setupAccessTrackingCollections(db.Database); err != nil {
+		log.Printf("⚠️  Warning: Failed to setup access tracking: %v", err)
+	} else {
+		log.Println("✅ Access tracking collections and indexes ready")
 	}
-	bot.Debug = cfg.Environment == "development"
-	log.Printf("✅ Authorized on account %s", bot.Self.UserName)
 
-	// Initialize services
-	paymentService := services.NewPaymentService(db.Database, bot, cfg.PaymentProviderToken)
+	if err := setupUsersCollection(db.Database); err != nil {
+		log.Printf("⚠️  Warning: Failed to setup users collection: %v", err)
+	} else {
+		log.Println("✅ Users collection and indexes ready")
+	}
+
+	// Initialize Telegram Bot (optional in development)
+	var bot *tgbotapi.BotAPI
+	var paymentService *services.PaymentService
 	userService := services.NewUserService(db.Database)
 
+	if !cfg.DisableTelegramBot {
+		var err error
+		bot, err = tgbotapi.NewBotAPI(cfg.TelegramBotToken)
+		if err != nil {
+			log.Fatalf("Failed to initialize Telegram bot: %v", err)
+		}
+		bot.Debug = cfg.Environment == "development"
+		log.Printf("✅ Authorized on account %s", bot.Self.UserName)
+		paymentService = services.NewPaymentService(db.Database, bot, cfg.PaymentProviderToken)
+	} else {
+		log.Println("⚠️  Telegram bot disabled (DISABLE_TELEGRAM_BOT=true)")
+	}
+
 	// Initialize handlers
-	paymentHandler := handlers.NewPaymentHandler(paymentService)
-	webhookHandler := handlers.NewWebhookHandler(bot, paymentService)
+	var paymentHandler *handlers.PaymentHandler
+	var webhookHandler *handlers.WebhookHandler
+	if !cfg.DisableTelegramBot {
+		paymentHandler = handlers.NewPaymentHandler(paymentService)
+		webhookHandler = handlers.NewWebhookHandler(bot, paymentService)
+	}
 	userHandler := handlers.NewUserHandler(userService)
 	pokemonHandler := handlers.NewPokemonHandler(db.Database)
 	linkerHandler := handlers.NewLinkerHandler(db.Database)
-	botCommandHandler := handlers.NewBotCommandHandler(bot, paymentService, userService)
+    adminHandler := handlers.NewAdminHandler(db.Database)
+	var botCommandHandler *handlers.BotCommandHandler
+	if !cfg.DisableTelegramBot {
+		botCommandHandler = handlers.NewBotCommandHandler(bot, paymentService, userService)
+	}
+	accessHandler := handlers.NewAccessHandler(db.Database)
 
 	// Setup Gin router
 	if cfg.Environment == "production" {
@@ -74,12 +106,14 @@ func main() {
 			pokemons.GET("/:id", pokemonHandler.GetPokemonByID)
 		}
 
-		// Payment routes
-		payments := api.Group("/payments")
-		{
-			payments.POST("/create-invoice", paymentHandler.CreateInvoice)
-			payments.POST("/status", paymentHandler.GetPaymentStatus)
-			payments.GET("/user/:userId", paymentHandler.GetUserPurchases)
+		// Payment routes (only when bot is enabled)
+		if !cfg.DisableTelegramBot {
+			payments := api.Group("/payments")
+			{
+				payments.POST("/create-invoice", paymentHandler.CreateInvoice)
+				payments.POST("/status", paymentHandler.GetPaymentStatus)
+				payments.GET("/user/:userId", paymentHandler.GetUserPurchases)
+			}
 		}
 
 		// User routes
@@ -103,12 +137,29 @@ func main() {
 			linkers.GET("/tag/:tag", linkerHandler.GetLinkersByTag)
 		}
 
+		// Access tracking routes
+		access := api.Group("/access")
+		{
+			access.POST("/track", accessHandler.TrackPageAccess)
+			access.GET("/stats", accessHandler.GetPageAccessStats)
+			access.GET("/daily", accessHandler.GetDailyAccessStats)
+			access.GET("/history/:userId", accessHandler.GetUserAccessHistory)
+		}
+
 		// Telegram webhook
-		api.POST("/webhook", webhookHandler.HandleWebhook)
+		if !cfg.DisableTelegramBot {
+			api.POST("/webhook", webhookHandler.HandleWebhook)
+		}
+	}
+
+	// Simple admin page (non-API) to list users and access details
+	// Expose ONLY in non-production environments
+	if cfg.Environment != "production" {
+		router.GET("/admin/users", adminHandler.UsersAccessPage)
 	}
 
 	// Setup webhook for Telegram bot
-	if cfg.Environment == "production" {
+	if !cfg.DisableTelegramBot && cfg.Environment == "production" {
 		webhookURL := "https://yourdomain.com/api/webhook" // Update this
 		webhook, err := tgbotapi.NewWebhook(webhookURL)
 		if err != nil {
@@ -125,7 +176,7 @@ func main() {
 			log.Fatalf("Failed to get webhook info: %v", err)
 		}
 		log.Printf("✅ Webhook set to: %s", info.URL)
-	} else {
+	} else if !cfg.DisableTelegramBot {
 		// For development, delete webhook first then use long polling
 		log.Println("🔧 Development mode: Removing webhook...")
 		deleteWebhook := tgbotapi.DeleteWebhookConfig{
@@ -159,7 +210,6 @@ func corsMiddleware(frontendURL string) gin.HandlerFunc {
 			"http://localhost:5173",
 			"http://127.0.0.1:5173",
 			"http://192.168.18.124:5173",
-			"https://perfectly-advice-ctrl-architects.trycloudflare.com",
 		}
 		
 		// Check if origin is allowed
@@ -249,4 +299,127 @@ func startPolling(bot *tgbotapi.BotAPI, paymentService *services.PaymentService,
 			}
 		}
 	}
+}
+
+// setupAccessTrackingCollections ensures the page_accesses collection and indexes exist
+func setupAccessTrackingCollections(db *mongo.Database) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	// Check if collection exists
+	collections, err := db.ListCollectionNames(ctx, bson.M{})
+	if err != nil {
+		return err
+	}
+
+	pageAccessesExists := false
+	for _, name := range collections {
+		if name == "page_accesses" {
+			pageAccessesExists = true
+			break
+		}
+	}
+
+	// Create collection if it doesn't exist
+	if !pageAccessesExists {
+		err = db.CreateCollection(ctx, "page_accesses")
+		if err != nil {
+			return err
+		}
+	}
+
+	// Get collection
+	collection := db.Collection("page_accesses")
+
+	// Define indexes
+	indexes := []mongo.IndexModel{
+		{
+			Keys:    bson.D{{Key: "timestamp", Value: -1}},
+			Options: options.Index().SetName("timestamp_-1"),
+		},
+		{
+			Keys: bson.D{
+				{Key: "user_id", Value: 1},
+				{Key: "timestamp", Value: -1},
+			},
+			Options: options.Index().SetName("user_id_1_timestamp_-1"),
+		},
+		{
+			Keys: bson.D{
+				{Key: "user_id", Value: 1},
+				{Key: "page_url", Value: 1},
+				{Key: "timestamp", Value: -1},
+			},
+			Options: options.Index().SetName("spam_prevention"),
+		},
+		{
+			Keys:    bson.D{{Key: "user_id", Value: 1}},
+			Options: options.Index().SetName("user_id_1"),
+		},
+	}
+
+	// Create indexes
+	_, err = collection.Indexes().CreateMany(ctx, indexes)
+	if err != nil {
+		// Don't fail if indexes already exist
+		log.Printf("Warning: Some indexes may already exist: %v", err)
+	}
+
+	return nil
+}
+
+// setupUsersCollection ensures the users collection and indexes exist
+func setupUsersCollection(db *mongo.Database) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	// Check if collection exists
+	collections, err := db.ListCollectionNames(ctx, bson.M{})
+	if err != nil {
+		return err
+	}
+
+	usersExists := false
+	for _, name := range collections {
+		if name == "users" {
+			usersExists = true
+			break
+		}
+	}
+
+	// Create collection if it doesn't exist
+	if !usersExists {
+		if err := db.CreateCollection(ctx, "users"); err != nil {
+			return err
+		}
+	}
+
+	collection := db.Collection("users")
+
+	// Define indexes
+	uniqueTrue := true
+	indexes := []mongo.IndexModel{
+		{
+			Keys:    bson.D{{Key: "telegram_id", Value: 1}},
+			Options: options.Index().SetName("telegram_id_1").SetUnique(uniqueTrue),
+		},
+		{
+			Keys:    bson.D{{Key: "username", Value: 1}},
+			Options: options.Index().SetName("username_1"),
+		},
+		{
+			Keys:    bson.D{{Key: "last_active", Value: -1}},
+			Options: options.Index().SetName("last_active_-1"),
+		},
+		{
+			Keys:    bson.D{{Key: "is_banned", Value: 1}},
+			Options: options.Index().SetName("is_banned_1"),
+		},
+	}
+
+	if _, err := collection.Indexes().CreateMany(ctx, indexes); err != nil {
+		log.Printf("Warning: Some user indexes may already exist: %v", err)
+	}
+
+	return nil
 }

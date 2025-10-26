@@ -15,6 +15,7 @@ import {
 import { linkerService } from '@/services/linkerService.ts';
 import { linkerRepository } from '@/services/linkerRepository';
 import { previewCache } from '@/services/previewCache';
+import { accessService } from '@/services/accessService';
 import { useCachedLinkers } from '@/hooks/useCachedLinkers';
 import Toast from '@/components/Toast/Toast';
 import { EditPostModal } from '@/components/EditPostModal/EditPostModal';
@@ -91,6 +92,17 @@ export default function LinkSharingApp() {
 
   // Memoize telegram user to prevent re-creation on every render
   const telegramUser = useMemo(() => getTelegramUser(), []);
+
+  // Track user page access on mount
+  useEffect(() => {
+    if (telegramUser) {
+      accessService.trackPageAccess({
+        userId: telegramUser.id,
+        username: telegramUser.username,
+        pageUrl: window.location.href,
+      });
+    }
+  }, [telegramUser]);
 
   // Use cached linkers hook (only for recent/popular, not my-posts)
   const sortParam = sortBy === 'my-posts' ? 'recent' : sortBy;

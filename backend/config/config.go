@@ -11,6 +11,7 @@ import (
 type Config struct {
 	TelegramBotToken       string
 	TelegramBotUsername    string
+	DisableTelegramBot     bool
 	Port                   string
 	Environment            string
 	MongoDBURI             string
@@ -32,6 +33,7 @@ func LoadConfig() *Config {
 	config := &Config{
 		TelegramBotToken:     getEnv("TELEGRAM_BOT_TOKEN", ""),
 		TelegramBotUsername:  getEnv("TELEGRAM_BOT_USERNAME", ""),
+		DisableTelegramBot:   getEnv("DISABLE_TELEGRAM_BOT", "false") == "true",
 		Port:                 getEnv("PORT", "8080"),
 		Environment:          getEnv("ENVIRONMENT", "development"),
 		MongoDBURI:           getEnv("MONGODB_URI", "mongodb://localhost:27017"),
@@ -44,8 +46,8 @@ func LoadConfig() *Config {
 	}
 
 	// Validate required fields
-	if config.TelegramBotToken == "" {
-		log.Fatal("TELEGRAM_BOT_TOKEN is required")
+	if !config.DisableTelegramBot && config.TelegramBotToken == "" {
+		log.Fatal("TELEGRAM_BOT_TOKEN is required (or set DISABLE_TELEGRAM_BOT=true)")
 	}
 
 	return config
