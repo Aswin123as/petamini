@@ -213,17 +213,17 @@ export default function LinkSharingApp() {
 
   const error = cacheError;
 
-  // Memoize word count to avoid repetitive calculations
-  const wordCount = useMemo(() => {
+  // Memoize character count (excluding tags) to avoid repetitive calculations
+  const charCount = useMemo(() => {
     const trimmed = inputText.trim();
-    if (!trimmed) return 0;
-    return trimmed.split(/\s+/).filter((word) => word.length > 0).length;
+    return trimmed.length;
   }, [inputText]);
 
   // Memoize tag count to avoid repetitive calculations
   const tagCount = useMemo(() => {
     return inputTags.split(',').filter((t) => t.trim()).length;
   }, [inputTags]);
+  
   const handleSubmit = async () => {
     const trimmedText = inputText.trim();
 
@@ -231,9 +231,9 @@ export default function LinkSharingApp() {
       return;
     }
 
-    // Check word count (250 word limit)
-    if (wordCount > 250) {
-      showToast('Post must be 250 words or less', 'error');
+    // Check character count (250 character limit)
+    if (charCount > 250) {
+      showToast('Post must be 250 characters or less', 'error');
       return;
     }
 
@@ -663,10 +663,10 @@ export default function LinkSharingApp() {
                   <span>·</span>
                   <span
                     className={`leading-tight ${
-                      wordCount > 250 ? 'text-red-500 font-medium' : ''
+                      charCount > 250 ? 'text-red-500 font-medium' : ''
                     }`}
                   >
-                    {wordCount}/250 words
+                    {charCount}/250 chars
                   </span>
                   <span>·</span>
                   <span
@@ -679,7 +679,7 @@ export default function LinkSharingApp() {
                 </div>
                 <button
                   onClick={handleSubmit}
-                  disabled={submitting || !inputText.trim()}
+                  disabled={submitting || !inputText.trim() || charCount > 250}
                   className="px-3 py-1.5 text-xs font-medium text-white bg-gray-900 rounded-md active:bg-gray-800 focus:outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
                 >
                   {submitting && <Loader2 className="w-3 h-3 animate-spin" />}

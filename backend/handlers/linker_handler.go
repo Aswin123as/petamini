@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/Aswin123as/petamini-backend/models"
@@ -166,8 +167,31 @@ func (h *LinkerHandler) CreateLinker(c *gin.Context) {
 		return
 	}
 
+	// Validate content is not empty (tags alone are not allowed)
+	trimmedContent := strings.TrimSpace(linker.Content)
+	if trimmedContent == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Content is required. Tags alone cannot be posted."})
+		return
+	}
+
+	// Validate content length (250 characters max)
+	if len(trimmedContent) > 250 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Content must be 250 characters or less"})
+		return
+	}
+
 	// Extract URLs from content
 	linker.Links = extractURLs(linker.Content)
+
+	// Initialize tags as empty array if nil
+	if linker.Tags == nil {
+		linker.Tags = []string{}
+	}
+
+	// Initialize links as empty array if nil (in case no URLs extracted)
+	if linker.Links == nil {
+		linker.Links = []string{}
+	}
 
 	collection := h.db.Collection("linkers")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -203,7 +227,11 @@ func (h *LinkerHandler) CreateLinker(c *gin.Context) {
 
 	_, err := collection.InsertOne(ctx, linker)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create linker"})
+		// Log the actual error for debugging
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to create linker",
+			"details": err.Error(),
+		})
 		return
 	}
 
@@ -306,6 +334,100 @@ func (h *LinkerHandler) PromoteLinker(c *gin.Context) {
 		},
 		options.Update().SetUpsert(true),
 	)
+
+	c.JSON(http.StatusOK, updatedLinker)
+}
+
+// UpdateLinker updates a linker's content and tags
+func (h *LinkerHandler) UpdateLinker(c *gin.Context) {
+	linkerID := c.Param("id")
+	userIDStr := c.Query("userId")
+
+	if userIDStr == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "User ID is required"})
+		return
+	}
+
+	userID, err := strconv.ParseInt(userIDStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	objectID, err := primitive.ObjectIDFromHex(linkerID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid linker ID"})
+		return
+	}
+
+	// Parse request body
+	var updateReq struct {
+		Content string   `json:"content" binding:"required"`
+		Tags    []string `json:"tags"`
+	}
+	if err := c.ShouldBindJSON(&updateReq); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Validate content is not empty (tags alone are not allowed)
+	trimmedContent := strings.TrimSpace(updateReq.Content)
+	if trimmedContent == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Content is required. Tags alone cannot be posted."})
+		return
+	}
+
+	// Validate content length (250 characters max)
+	if len(trimmedContent) > 250 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Content must be 250 characters or less"})
+		return
+	}
+
+	collection := h.db.Collection("linkers")
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// Find the linker to check ownership
+	var linker models.Linker
+	err = collection.FindOne(ctx, bson.M{"_id": objectID}).Decode(&linker)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Linker not found"})
+		return
+	}
+
+	// Check if the user owns this linker
+	if linker.UserID != userID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "You can only edit your own posts"})
+		return
+	}
+
+	// Extract URLs from updated content
+	updatedLinks := extractURLs(updateReq.Content)
+
+	// Initialize arrays as empty if nil to avoid MongoDB issues
+	if updateReq.Tags == nil {
+		updateReq.Tags = []string{}
+	}
+	if updatedLinks == nil {
+		updatedLinks = []string{}
+	}
+
+	// Update the linker
+	update := bson.M{
+		"$set": bson.M{
+			"content": updateReq.Content,
+			"tags":    updateReq.Tags,
+			"links":   updatedLinks,
+		},
+	}
+
+	opts := options.FindOneAndUpdate().SetReturnDocument(options.After)
+	var updatedLinker models.Linker
+	err = collection.FindOneAndUpdate(ctx, bson.M{"_id": objectID}, update, opts).Decode(&updatedLinker)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update linker"})
+		return
+	}
 
 	c.JSON(http.StatusOK, updatedLinker)
 }

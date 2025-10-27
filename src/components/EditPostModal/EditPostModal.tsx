@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { X, Save, Loader2 } from 'lucide-react';
 
 interface EditPostModalProps {
@@ -20,17 +20,34 @@ export function EditPostModal({
   const [tags, setTags] = useState(initialTags.join(', '));
   const [saving, setSaving] = useState(false);
 
+  // Character count (excluding tags)
+  const charCount = useMemo(() => {
+    return content.trim().length;
+  }, [content]);
+
+  // Tag count
+  const tagCount = useMemo(() => {
+    return tags.split(',').filter((t) => t.trim()).length;
+  }, [tags]);
+
   const handleSave = async () => {
-    if (!content.trim()) return;
+    const trimmedContent = content.trim();
+    if (!trimmedContent) return;
+
+    // Validate character limit
+    if (charCount > 250) {
+      return;
+    }
 
     const tagArray = tags
       .split(',')
       .map((tag) => tag.trim().toLowerCase())
-      .filter((tag) => tag.length > 0);
+      .filter((tag) => tag.length > 0)
+      .slice(0, 2); // Limit to 2 tags
 
     try {
       setSaving(true);
-      await onSave(postId, content.trim(), tagArray);
+      await onSave(postId, trimmedContent, tagArray);
       onClose();
     } catch (error) {
       console.error('Error saving post:', error);
@@ -67,9 +84,18 @@ export function EditPostModal({
         <div className="p-3 space-y-2.5">
           {/* Content Input */}
           <div>
-            <label className="block text-[10px] font-medium text-gray-900 mb-1">
-              Content
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-[10px] font-medium text-gray-900">
+                Content
+              </label>
+              <span
+                className={`text-[10px] ${
+                  charCount > 250 ? 'text-red-500 font-medium' : 'text-gray-400'
+                }`}
+              >
+                {charCount}/250 chars
+              </span>
+            </div>
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
@@ -82,9 +108,18 @@ export function EditPostModal({
 
           {/* Tags Input */}
           <div>
-            <label className="block text-[10px] font-medium text-gray-900 mb-1">
-              Tags (comma separated)
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-[10px] font-medium text-gray-900">
+                Tags (comma separated)
+              </label>
+              <span
+                className={`text-[10px] ${
+                  tagCount > 2 ? 'text-red-500 font-medium' : 'text-gray-400'
+                }`}
+              >
+                {tagCount}/2 tags
+              </span>
+            </div>
             <input
               type="text"
               value={tags}
@@ -107,7 +142,7 @@ export function EditPostModal({
           </button>
           <button
             onClick={handleSave}
-            disabled={!content.trim() || saving}
+              disabled={!content.trim() || charCount > 250 || saving}
             className="px-3 py-1.5 text-xs font-medium text-white bg-gray-900 rounded-md active:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
           >
             {saving ? (

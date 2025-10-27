@@ -131,10 +131,11 @@ func main() {
 		{
 			linkers.GET("", linkerHandler.GetAllLinkers)
 			linkers.GET("/check-duplicate", linkerHandler.CheckDuplicateLink)
+			linkers.GET("/tag/:tag", linkerHandler.GetLinkersByTag)
 			linkers.POST("", linkerHandler.CreateLinker)
+			linkers.PUT("/:id", linkerHandler.UpdateLinker)
 			linkers.POST("/:id/promote", linkerHandler.PromoteLinker)
 			linkers.DELETE("/:id", linkerHandler.DeleteLinker)
-			linkers.GET("/tag/:tag", linkerHandler.GetLinkersByTag)
 		}
 
 		// Access tracking routes
