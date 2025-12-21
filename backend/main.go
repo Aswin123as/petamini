@@ -76,6 +76,7 @@ func main() {
 		botCommandHandler = handlers.NewBotCommandHandler(bot, paymentService, userService)
 	}
 	accessHandler := handlers.NewAccessHandler(db.Database)
+	wsHandler := handlers.NewWebSocketHandler(db.Database)
 
 	// Setup Gin router
 	if cfg.Environment == "production" {
@@ -95,6 +96,9 @@ func main() {
 			"timestamp": time.Now().Unix(),
 		})
 	})
+
+	// WebSocket endpoint for real-time updates
+	router.GET("/ws", wsHandler.HandleWebSocket)
 
 	// API routes
 	api := router.Group("/api")

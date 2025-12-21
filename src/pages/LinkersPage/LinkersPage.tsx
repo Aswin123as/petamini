@@ -19,6 +19,7 @@ import { accessService } from '@/services/accessService';
 import { useCachedLinkers } from '@/hooks/useCachedLinkers';
 import Toast from '@/components/Toast/Toast';
 import { EditPostModal } from '@/components/EditPostModal/EditPostModal';
+import { websocketService, type WSMessage } from '@/services/websocketService';
 
 interface LinkPreview {
   title: string | null;
@@ -223,7 +224,7 @@ export default function LinkSharingApp() {
   const tagCount = useMemo(() => {
     return inputTags.split(',').filter((t) => t.trim()).length;
   }, [inputTags]);
-  
+
   const handleSubmit = async () => {
     const trimmedText = inputText.trim();
 
@@ -490,6 +491,104 @@ export default function LinkSharingApp() {
     const derived = extractUrls(link.content);
     return derived[0];
   };
+
+  // WebSocket real-time updates
+  useEffect(() => {
+    console.log('🔌 Setting up WebSocket connection...');
+    websocketService.connect();
+
+    const unsubscribe = websocketService.subscribe((message: WSMessage) => {
+      console.log('📩 Received WebSocket message:', message);
+
+      switch (message.type) {
+        case 'connected':
+          console.log('✅ WebSocket connected');
+          break;
+
+        case 'insert': {
+          // New linker created - add to top of list
+          const newLinker = message.payload?.fullDocument;
+          if (newLinker) {
+            const ensuredLinks = Array.isArray(newLinker.links)
+              ? newLinker.links
+              : extractUrls(newLinker.content);
+            const firstUrl = ensuredLinks[0];
+            const cachedPreview = firstUrl ? previewCache.get(firstUrl) : null;
+
+            const newLink: Link = {
+              ...newLinker,
+              links: ensuredLinks,
+              promoted: telegramUser
+                ? newLinker.promotedBy.includes(telegramUser.id)
+                : false,
+              preview: cachedPreview,
+              previewLoading: ensuredLinks.length > 0 && !cachedPreview,
+            };
+
+            setLinks((prevLinks) => {
+              // Check if link already exists (avoid duplicates)
+              if (prevLinks.some((link) => link.id === newLink.id)) {
+                return prevLinks;
+              }
+              return [newLink, ...prevLinks];
+            });
+
+            // Fetch preview if needed
+            if (firstUrl && !cachedPreview) {
+              fetchLinkPreview(firstUrl, newLink.id);
+            }
+          }
+          break;
+        }
+
+        case 'update': {
+          // Linker updated - update in list
+          const updatedLinker = message.payload?.fullDocument;
+          if (updatedLinker) {
+            setLinks((prevLinks) =>
+              prevLinks.map((link) =>
+                link.id === updatedLinker.id
+                  ? {
+                      ...link,
+                      ...updatedLinker,
+                      promoted: telegramUser
+                        ? updatedLinker.promotedBy.includes(telegramUser.id)
+                        : false,
+                    }
+                  : link
+              )
+            );
+          }
+          break;
+        }
+
+        case 'delete': {
+          // Linker deleted - remove from list
+          const deletedId = message.payload?.documentKey?._id;
+          if (deletedId) {
+            setLinks((prevLinks) =>
+              prevLinks.filter((link) => link.id !== deletedId)
+            );
+          }
+          break;
+        }
+
+        case 'error':
+          console.error('❌ WebSocket error:', message.payload);
+          break;
+
+        default:
+          console.warn('⚠️ Unknown WebSocket message type:', message.type);
+      }
+    });
+
+    // Cleanup on unmount
+    return () => {
+      console.log('🔌 Cleaning up WebSocket connection');
+      unsubscribe();
+      websocketService.disconnect();
+    };
+  }, [telegramUser, fetchLinkPreview]);
 
   // Render content with clickable links
   const renderContentWithLinks = (content: string, omitLinks?: string[]) => {
