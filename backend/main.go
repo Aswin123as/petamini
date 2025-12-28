@@ -4,8 +4,6 @@ import (
 	"context"
 	"log"
 	"net/http"
-	"os"
-	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -67,7 +65,7 @@ func main() {
 	var webhookHandler *handlers.WebhookHandler
 	if !cfg.DisableTelegramBot {
 		paymentHandler = handlers.NewPaymentHandler(paymentService)
-		// webhookHandler will be constructed after botCommandHandler is available
+		webhookHandler = handlers.NewWebhookHandler(bot, paymentService)
 	}
 	userHandler := handlers.NewUserHandler(userService)
 	pokemonHandler := handlers.NewPokemonHandler(db.Database)
@@ -76,8 +74,6 @@ func main() {
 	var botCommandHandler *handlers.BotCommandHandler
 	if !cfg.DisableTelegramBot {
 		botCommandHandler = handlers.NewBotCommandHandler(bot, paymentService, userService)
-		// Now that botCommandHandler exists, create webhook handler and pass the command handler
-		webhookHandler = handlers.NewWebhookHandler(bot, paymentService, botCommandHandler)
 	}
 	accessHandler := handlers.NewAccessHandler(db.Database)
 	wsHandler := handlers.NewWebSocketHandler(db.Database)
@@ -169,22 +165,7 @@ func main() {
 
 	// Setup webhook for Telegram bot
 	if !cfg.DisableTelegramBot && cfg.Environment == "production" {
-		// Derive webhook URL from the configured public URL.
-		// Deployment scripts place the public tunnel URL into FRONTEND_URL (possibly comma-separated).
-		webhookBase := cfg.FrontendURL
-		// Fallback to BACKEND_URL env var if FRONTEND_URL not set
-		if webhookBase == "" {
-			webhookBase = os.Getenv("BACKEND_URL")
-		}
-		if webhookBase == "" {
-			log.Fatalf("WEBHOOK URL is required in production: set FRONTEND_URL or BACKEND_URL to your public domain")
-		}
-		// If a comma-separated list is present, use the last entry (deployment may append the tunnel URL)
-		if strings.Contains(webhookBase, ",") {
-			parts := strings.Split(webhookBase, ",")
-			webhookBase = strings.TrimSpace(parts[len(parts)-1])
-		}
-		webhookURL := strings.TrimRight(webhookBase, "/") + "/api/webhook"
+		webhookURL := "https://yourdomain.com/api/webhook" // Update this
 		webhook, err := tgbotapi.NewWebhook(webhookURL)
 		if err != nil {
 			log.Fatalf("Failed to create webhook: %v", err)
