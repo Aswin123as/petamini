@@ -4,6 +4,8 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -165,7 +167,22 @@ func main() {
 
 	// Setup webhook for Telegram bot
 	if !cfg.DisableTelegramBot && cfg.Environment == "production" {
-		webhookURL := "https://yourdomain.com/api/webhook" // Update this
+		// Derive webhook URL from the configured public URL.
+		// Deployment scripts place the public tunnel URL into FRONTEND_URL (possibly comma-separated).
+		webhookBase := cfg.FrontendURL
+		// Fallback to BACKEND_URL env var if FRONTEND_URL not set
+		if webhookBase == "" {
+			webhookBase = os.Getenv("BACKEND_URL")
+		}
+		if webhookBase == "" {
+			log.Fatalf("WEBHOOK URL is required in production: set FRONTEND_URL or BACKEND_URL to your public domain")
+		}
+		// If a comma-separated list is present, use the last entry (deployment may append the tunnel URL)
+		if strings.Contains(webhookBase, ",") {
+			parts := strings.Split(webhookBase, ",")
+			webhookBase = strings.TrimSpace(parts[len(parts)-1])
+		}
+		webhookURL := strings.TrimRight(webhookBase, "/") + "/api/webhook"
 		webhook, err := tgbotapi.NewWebhook(webhookURL)
 		if err != nil {
 			log.Fatalf("Failed to create webhook: %v", err)

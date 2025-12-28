@@ -37,7 +37,6 @@ func (h *BotCommandHandler) HandleCommand(update tgbotapi.Update) {
 	switch update.Message.Command() {
 	case "start":
 		msg.Text = h.handleStart(update.Message.From)
-		// Provide quick action button to open the mini app (Linkers)
 		msg.ReplyMarkup = h.openLinkersKeyboard()
 	case "help":
 		msg.Text = h.handleHelp()
