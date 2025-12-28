@@ -100,16 +100,19 @@ func (h *PaymentHandler) GetUserPurchases(c *gin.Context) {
 }
 
 // WebhookHandler handles incoming Telegram webhooks
+// Now supports forwarding command updates to the BotCommandHandler
 type WebhookHandler struct {
-	bot            *tgbotapi.BotAPI
-	paymentService *services.PaymentService
+	bot               *tgbotapi.BotAPI
+	paymentService    *services.PaymentService
+	botCommandHandler *BotCommandHandler
 }
 
 // NewWebhookHandler creates a new webhook handler
-func NewWebhookHandler(bot *tgbotapi.BotAPI, paymentService *services.PaymentService) *WebhookHandler {
+func NewWebhookHandler(bot *tgbotapi.BotAPI, paymentService *services.PaymentService, botCommandHandler *BotCommandHandler) *WebhookHandler {
 	return &WebhookHandler{
-		bot:            bot,
-		paymentService: paymentService,
+		bot:               bot,
+		paymentService:    paymentService,
+		botCommandHandler: botCommandHandler,
 	}
 }
 
@@ -121,6 +124,15 @@ func (h *WebhookHandler) HandleWebhook(c *gin.Context) {
 		log.Printf("Error binding webhook update: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid update"})
 		return
+	}
+
+	// Forward commands to BotCommandHandler (so /start, /help, etc. work in webhook mode)
+	if update.Message != nil && update.Message.IsCommand() {
+		if h.botCommandHandler != nil {
+			go h.botCommandHandler.HandleCommand(update)
+		} else {
+			log.Printf("Command received but botCommandHandler is nil; update: %+v", update)
+		}
 	}
 
 	// Handle successful payment

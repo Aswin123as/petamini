@@ -67,7 +67,7 @@ func main() {
 	var webhookHandler *handlers.WebhookHandler
 	if !cfg.DisableTelegramBot {
 		paymentHandler = handlers.NewPaymentHandler(paymentService)
-		webhookHandler = handlers.NewWebhookHandler(bot, paymentService)
+		// webhookHandler will be constructed after botCommandHandler is available
 	}
 	userHandler := handlers.NewUserHandler(userService)
 	pokemonHandler := handlers.NewPokemonHandler(db.Database)
@@ -76,6 +76,8 @@ func main() {
 	var botCommandHandler *handlers.BotCommandHandler
 	if !cfg.DisableTelegramBot {
 		botCommandHandler = handlers.NewBotCommandHandler(bot, paymentService, userService)
+		// Now that botCommandHandler exists, create webhook handler and pass the command handler
+		webhookHandler = handlers.NewWebhookHandler(bot, paymentService, botCommandHandler)
 	}
 	accessHandler := handlers.NewAccessHandler(db.Database)
 	wsHandler := handlers.NewWebSocketHandler(db.Database)
