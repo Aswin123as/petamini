@@ -443,18 +443,7 @@ export default function LinkSharingApp() {
     );
   }, [links, sortBy, telegramUser]);
 
-  const getTimeAgo = (timestamp: string) => {
-    const seconds = Math.floor(
-      (new Date().getTime() - new Date(timestamp).getTime()) / 1000
-    );
-    if (seconds < 60) return 'just now';
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes}m ago`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
-    const days = Math.floor(hours / 24);
-    return `${days}d ago`;
-  };
+  // getTimeAgo removed — timestamp display is currently commented out
 
   const getDomain = (url: string) => {
     try {
@@ -665,7 +654,7 @@ export default function LinkSharingApp() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gray-50">
       <div className="max-w-2xl mx-auto px-3 py-4 pb-20">
         {/* Header */}
         <div className="mb-4 flex items-center gap-2">
@@ -729,8 +718,8 @@ export default function LinkSharingApp() {
         )}
 
         {/* Input Box */}
-        <div className="mb-4">
-          <div className="bg-white border border-gray-200 rounded-lg p-3">
+        <div className="mb-2">
+          <div className="bg-white border border-gray-200 rounded-lg p-2">
             <textarea
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
@@ -839,7 +828,7 @@ export default function LinkSharingApp() {
             {getSortedLinks.map((link) => (
               <div
                 key={link.id}
-                className="bg-white border border-gray-200 rounded-lg p-3 transition-colors"
+                className="bg-white border border-gray-200 rounded-lg p-1 transition-colors"
               >
                 <div className="flex items-start gap-2">
                   <button
@@ -1016,9 +1005,9 @@ export default function LinkSharingApp() {
                     )}
 
                     <div className="mt-1.5 flex items-center justify-between">
-                      <div className="text-[10px] text-gray-500">
+                      {/* <div className="text-[10px] text-gray-500">
                         {getTimeAgo(link.timestamp)}
-                      </div>
+                      </div> */}
 
                       {/* Edit/Delete buttons for own posts */}
                       {telegramUser && link.userId === telegramUser.id && (
